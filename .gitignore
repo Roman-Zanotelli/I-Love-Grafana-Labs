@@ -1,0 +1,54 @@
+# =====================================================================
+# Created with the help of OpenAI's ChatGPT (Manually Reviewed/Extended)
+# =====================================================================
+
+############################
+# Global useful ignores
+############################
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# IDEs & editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+
+############################
+# Rust / Cargo
+############################
+# Build outputs
+**/target
+
+############################
+# Helm
+############################
+# Built/packaged charts
+*.tgz
+
+# Helm secret files (if any)
+**/*.secret.yaml
+**/secret
+
+############################
+# Certs
+############################
+*.crt
+*.key
+*.pem
+*.cer
+*.der
+*.bundle
