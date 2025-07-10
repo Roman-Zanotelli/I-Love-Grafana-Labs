@@ -1,10 +1,23 @@
-# I-Love-Grafana-Labs
+# 👁️ ❤️ Grafana
 I Love Grafana! So I made a demo project to show off using their solutions.
+
+## About Me
+I'm a passionate developer with a deep interest in systems architecture, cloud-native technologies, and observability-driven development. My journey began over a decade ago, programming in Java at the age of 14 to build and orchestrate game systems — a passion that quickly evolved into exploring Kubernetes, infrastructure automation, and scalable backend solutions.
+
+I’ve since worked to develop my own business, designing and deploying cost-optimized, secure systems from the ground up. With experience in Helm, Kubernetes, TalosOS, ArgoCD, Envoy, Redis, Jenkins, PostgreSQL, gRPC, and more, I focus on building efficient, profitable, and resilient systems that are production-ready and resource-aware.
+
+I believe observability is a core pillar of modern software, and Grafana’s tools have played a pivotal role in my personal and professional projects — from monitoring self-hosted infrastructure to fine-tuning distributed services. I'm particularly drawn to the open-source ethos and thoughtful design behind Grafana's ecosystem and strive to build solutions that reflect those same values.
+
+Whether working in Rust, Go, or Java, I bring a modern, adaptable, and low-level-capable mindset — from edge compute to backend orchestration. This project serves as both a technical showcase and a stepping stone in my continued growth in cloud development, observability, and open-source tooling.
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/roman-zanotelli/)
+[![GitHub](https://img.shields.io/badge/GitHub-Profile-green?logo=github&logoColor=white)](https://github.com/Roman-Zanotelli)
+
+---
+
 ## 🎯 Project Overview
 
 This project is a **demo deployment of a custom business logic API** using Kubernetes and Helm. The API will be exposed via a **RESTful HTTPS interface**, secured with **Envoy** as the ingress gateway. The primary focus is to demonstrate the full power of the **Grafana observability ecosystem**, all running seamlessly in **Minikube** or a **public Kubernetes platform**, deployed through a **single umbrella Helm chart**.
-
----
 
 ## 🧠 Key Goals
 
@@ -14,8 +27,6 @@ This project is a **demo deployment of a custom business logic API** using Kuber
 - ✅ Deploy everything via a **unified Helm umbrella chart** for easy reproducibility.
 - ✅ Highlight my passion for Grafana tooling and observability best practices.
 - ✅ Demonstrate adaptability, enthusiasm, and hands-on exposure to modern cloud-native tools.
-
----
 
 ## 🛠️ Technologies Used
 
@@ -35,7 +46,6 @@ This project is a **demo deployment of a custom business logic API** using Kuber
 
 ### Programming Language
 - [Rust](https://www.rust-lang.org/)
-
 ---
 
 ## 💰 Demo Application: Example Banking API
@@ -44,8 +54,6 @@ A lightweight RESTful API simulating basic banking operations:
 - Endpoints for creating accounts, viewing balances, transferring funds, etc.
 - Instrumented for metrics, logs, traces, and profiling hooks.
 - Secured with HTTPS via Envoy.
-
----
 
 ## 🌈 What This Demo Shows
 
@@ -63,7 +71,9 @@ While I'm still new to some of these tools, this project highlights my:
 - 🔄 Adaptability and eagerness to learn modern cloud-native tooling.
 - 🛠️ Practical experience integrating complex systems in Kubernetes.
 
-> This demo isn’t just about functionality—it’s about **showing mindset**.
+> This demo isn’t just about functionality—it’s about **showing the mindset and understanding** needed to deploy cloud applications with grafana's industry tested solutions.
+
+---
 
 ## 🤖 AI Assistance Acknowledgment
 
