@@ -18,88 +18,91 @@ impl fmt::Display for JwtClaims{
     }
 }
 
-//Stuff needed for JWT
-//Immutable
-static JWT_VALIDATION: OnceLock<Validation> = OnceLock::new();
-static JWT_HEADER: OnceLock<Header> = OnceLock::new();
-static JWT_DURATION: OnceLock<usize> = OnceLock::new();
-static JWT_ISS: OnceLock<String> = OnceLock::new();
-static JWT_DECODE_KEY: OnceLock<DecodingKey> = OnceLock::new();
-static JWT_ENCODE_KEY: OnceLock<EncodingKey> = OnceLock::new();
-
-//Public entry point/logic for encoding a JWT Claim for user id
-pub fn encode_claims(id: &str) -> Result<String, JwtError> {
-    encode(
-        JWT_HEADER.get_or_init(||init_header()), 
-        &JwtClaims{
-            id: id.to_string(),
-            exp: Utc::now().timestamp() as usize + JWT_DURATION.get_or_init(|| init_duration()),
-            iss: JWT_ISS.get_or_init(||init_iss()).to_string()
-        },
-        JWT_ENCODE_KEY.get_or_init(|| init_encode_key())
-    )
-    .track(id)
-}
+//JWT
+//Immutable, Internal Only
+static _JWT_VALIDATION: OnceLock<Validation> = OnceLock::new();
+static _JWT_HEADER: OnceLock<Header> = OnceLock::new();
+static _JWT_DURATION: OnceLock<usize> = OnceLock::new();
+static _JWT_ISS: OnceLock<String> = OnceLock::new();
+static _JWT_DECODE_KEY: OnceLock<DecodingKey> = OnceLock::new();
+static _JWT_ENCODE_KEY: OnceLock<EncodingKey> = OnceLock::new();
 
 //Internal logic for decoding a signed JWT claim
-fn inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError> {
+fn _inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError> {
     Ok(
         decode::<JwtClaims>(
             signed_claim, 
-            JWT_DECODE_KEY.get_or_init(|| init_decode_key()), 
-            JWT_VALIDATION.get_or_init(|| init_validation())
+            _JWT_DECODE_KEY.get_or_init(|| _decode_key()), 
+            _JWT_VALIDATION.get_or_init(|| _validation())
         )?
         .claims
     )
     .track(signed_claim)
 }
 
-//Default Sync version of decode
+//Default Sync Decode
 #[cfg(feature = "sync-decode")]
 pub fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
-    inner_decode(signed_claim)
+    _inner_decode(signed_claim)
 }
 
 
-//Async version of decode
+//Async Decode
 #[cfg(feature = "async-decode")]
 pub async fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
-    inner_decode(signed_claim)
+    _inner_decode(signed_claim)
+}
+
+//Optional Sync Encode 
+#[cfg(feature = "encode")]
+pub fn encode_claims(id: &str) -> Result<String, JwtError> {
+    encode(
+        _JWT_HEADER.get_or_init(|| _header()), 
+        &JwtClaims{
+            id: id.to_string(),
+            exp: Utc::now().timestamp() as usize + _JWT_DURATION.get_or_init(|| _duration()),
+            iss: _JWT_ISS.get_or_init(|| _iss()).clone()
+        },
+        _JWT_ENCODE_KEY.get_or_init(|| _encode_key())
+    )
+    .track(id)
 }
 
 
 
 
 //Initialization methods for static resources
-fn init_validation() -> Validation{
+fn _validation() -> Validation{
     todo!()
 }
-fn init_header() -> Header{
+fn _header() -> Header{
     todo!()
 }
-fn init_duration() -> usize{
+fn _duration() -> usize{
     todo!()
 }
-fn init_iss() -> String{
+fn _iss() -> String{
     todo!()
 }
-fn init_decode_key() -> DecodingKey{
+fn _decode_key() -> DecodingKey{
     todo!()
 }
-fn init_encode_key() -> EncodingKey{
+fn _encode_key() -> EncodingKey{
     todo!()
 }
 
-trait Track {
+
+//Observability Tracking
+trait _Track {
     fn track(self, input: &str) -> Self;
 }
-impl Track for Result<JwtClaims, JwtError>{
+impl _Track for Result<JwtClaims, JwtError>{
     fn track(self, input: &str) -> Self{
         //TODO: Tracking
         return self
     }
 }
-impl Track for Result<String, JwtError>{
+impl _Track for Result<String, JwtError>{
     fn track(self, input: &str) -> Self{
         //TODO: Tracking
         return self
