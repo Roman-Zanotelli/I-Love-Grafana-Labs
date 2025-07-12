@@ -10,6 +10,8 @@ serde_json = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [features]
-encode = []
-sync-decode  = []
-async-decode = []
+encode = ["core"]
+decode = ["core"]
+core = []
+sync-decode  = ["decode"]
+async-decode = ["decode"]

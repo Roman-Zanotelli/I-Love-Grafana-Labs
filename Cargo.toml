@@ -1,0 +1,7 @@
+[workspace]
+members = [
+  "rust/auth-api",
+  "rust/bank-api",
+  "rust/jwt-proxy-auth",
+  "rust/jwt-util",
+]

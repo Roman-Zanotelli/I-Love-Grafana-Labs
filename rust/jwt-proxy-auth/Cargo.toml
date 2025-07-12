@@ -1,5 +1,5 @@
 [package]
-name = "example-jwt-auth-service"
+name = "jwt-proxy-auth"
 version = "0.1.0"
 edition = "2024"
 
