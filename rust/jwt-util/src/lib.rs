@@ -18,8 +18,8 @@ pub mod core{
             }
         }
 
-    //Observability Tracking Trait
-    pub(crate)  trait Track {
+    //Observability Tracking Trait (Arc is used in both implementations so that a background task can hold reference to the result without copying it)
+    pub(crate) trait Track {
         fn track(self, input: &str) -> Self;
     }
 }
@@ -30,7 +30,7 @@ pub mod core{
 //=========================================
 #[cfg(feature = "decode")]
 pub mod decode{
-    use std::sync::OnceLock;
+    use std::sync::{Arc, OnceLock};
 
     use jsonwebtoken::errors::Error as JwtError;
 
@@ -41,27 +41,27 @@ pub mod decode{
     static JWT_VALIDATION: OnceLock<jsonwebtoken::Validation> = OnceLock::new();
 
     //Internal logic for decoding a signed JWT claim
-    fn _inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError> {
-        Ok(
+    fn _inner_decode(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
+        Arc::new(
             jsonwebtoken::decode::<JwtClaims>(
                 signed_claim, 
                 JWT_DECODE_KEY.get_or_init(|| _decode_key()), 
                 JWT_VALIDATION.get_or_init(|| _validation())
-            )?
-            .claims
+            )
+            .map(|token| token.claims)
         )
         .track(signed_claim)
     }
 
     //Default Sync Decode
     #[cfg(feature = "sync-decode")]
-    pub fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
+    pub fn decode_claims(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
         _inner_decode(signed_claim)
     }
 
     //Async Decode
     #[cfg(feature = "async-decode")]
-    pub async fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
+    pub async fn decode_claims(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
         _inner_decode(signed_claim)
     }
 
@@ -76,7 +76,7 @@ pub mod decode{
     }
 
     //tracking implementation for decoding
-    impl Track for Result<JwtClaims, JwtError>{
+    impl Track for Arc<Result<JwtClaims, JwtError>>{
         fn track(self, input: &str) -> Self{
             //TODO: Tracking
             return self
@@ -90,7 +90,7 @@ pub mod decode{
 //=========================================
 #[cfg(feature = "encode")]
 pub mod encode{
-    use std::sync::OnceLock;
+    use std::sync::{Arc, OnceLock};
 
     use chrono::Utc;
     use jsonwebtoken::errors::Error as JwtError;
@@ -104,15 +104,17 @@ pub mod encode{
     static JWT_ISS: OnceLock<String> = OnceLock::new();
 
     //Encode a claim by user id (later add a more flexible method for general claims)
-    pub fn encode_claims(id: &str) -> Result<String, JwtError> {
-        jsonwebtoken::encode(
-            JWT_HEADER.get_or_init(|| _header()), 
-            &JwtClaims{
-                id: id.to_string(),
-                exp: Utc::now().timestamp() as usize + JWT_DURATION.get_or_init(|| _duration()),
-                iss: JWT_ISS.get_or_init(|| _iss()).clone()
-            },
-            JWT_ENCODE_KEY.get_or_init(|| _encode_key())
+    pub fn encode_claims(id: &str) -> Arc<Result<String, JwtError>> {
+        Arc::new(
+            jsonwebtoken::encode(
+                JWT_HEADER.get_or_init(|| _header()), 
+                &JwtClaims{
+                    id: id.to_string(),
+                    exp: Utc::now().timestamp() as usize + JWT_DURATION.get_or_init(|| _duration()),
+                    iss: JWT_ISS.get_or_init(|| _iss()).clone()
+                },
+                JWT_ENCODE_KEY.get_or_init(|| _encode_key())
+            )
         )
         .track(id)
     }
@@ -139,7 +141,7 @@ pub mod encode{
     }
 
     //tracking implementation for encoding
-    impl Track for Result<String, JwtError>{
+    impl Track for Arc<Result<String, JwtError>>{
         fn track(self, input: &str) -> Self{
             //TODO: Tracking
             return self
