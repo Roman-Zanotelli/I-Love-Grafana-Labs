@@ -1,6 +1,6 @@
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/roman-zanotelli/)
 [![GitHub](https://img.shields.io/badge/GitHub-Profile-green?logo=github&logoColor=white)](https://github.com/Roman-Zanotelli)
-# 👁️ ❤️ 📈📉
+# 👁️-❤️-📈📉
 I Love Grafana! So I made a demo project to show off using their solutions.
 
 ### Me:
@@ -48,8 +48,8 @@ This project is planned to be completed in ~5 days (2 planning, 3 for implementa
 - [PostgreSQL](https://www.postgresql.org/)
 
 ### Observability Stack (Grafana Labs + Prometheus)
-- [Grafana Dashboard (Visualization)](https://grafana.com/)
-- [Prometheus (Metrics)](https://grafana.com/oss/prometheus/)
+- [Grafana Dashboard (Visualization)](https://grafana.com/grafana/)
+- [Prometheus (Metrics)](https://prometheus.io/) [[Additional Info]](https://grafana.com/oss/prometheus/)
 - [Grafana Loki (Logs)](https://grafana.com/oss/loki/)
 - [Grafana Pyroscope (Profiling)](https://grafana.com/oss/pyroscope/)
 - [Grafana Tempo (Tracing)](https://grafana.com/oss/tempo/)
@@ -158,7 +158,7 @@ Grafana Beyla will probably simplify Postgre Observability Set Up
 > Todo: More Detailed DB Explination
 
 ## Todo Grafana
-While Grafana Solutions are the main star of the show, it will be easiest to implement after all core buisness logic, then I will have all system interactions fully flushed out (for the purposes of this demo); **Giving a holistic view of the project's entire Observability Needs**
+While Grafana is the star of the show, it will be best to implement after all core buisness logic, then I will have all system interactions fully planned/flushed out (for the purposes of this demo); **Giving a holistic view of the project's entire Observability Needs**, helping me plan.
 
 As mentioned before I will likely be skipping longterm storage this demo, including Observability; In production is a different story, I may work on a future iteration showing how this demo can be expanded to handle its general and Observability storage needs.
 
@@ -166,6 +166,6 @@ As mentioned before I will likely be skipping longterm storage this demo, includ
 
 Parts of this README and project scaffolding were created with assistance from [ChatGPT by OpenAI](https://openai.com/chatgpt) to help organize ideas, improve clarity, and accelerate development.
 
-Sections of the front-end were created with assistance from [LlamaCoder by Together.ai](https://llamacoder.together.ai/) in conjuction with [ChatGPT](https://openai.com/chatgpt) to help accelerate application development.
+Sections of the front-end were created with assistance from [LlamaCoder by Together.ai](https://llamacoder.together.ai/) in conjuction with [ChatGPT](https://openai.com/chatgpt) to help accelerate development.
 
 > ⚖️ **Ethical Use Statement**: I believe in responsible and transparent use of AI tools. While AI helped shape structure and language, all architectural decisions, implementation, and final content reflect my own understanding, judgment, and intent.
