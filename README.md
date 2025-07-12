@@ -5,13 +5,13 @@ I Love Grafana! So I made a demo project to show off using their solutions.
 
 ### Me:
 
-I'm a passionate developer with a deep interest in systems architecture, cloud-native technologies, and observability-driven development. My journey began over a decade ago, programming in Java at the age of 14 to build and orchestrate game systems — a passion that quickly evolved into exploring Kubernetes, infrastructure automation, and scalable backend solutions.
+I'm a passionate developer with a deep interest in systems architecture, cloud-native technologies, and security/observability-driven development. My journey began over a decade ago, programming in Java at the age of 14 to build and orchestrate game systems — a passion that quickly evolved into exploring Kubernetes, infrastructure automation, and scalable backend solutions.
 
 I’ve since worked to develop my own business, designing and deploying cost-optimized, secure systems from the ground up. With experience in Helm, Kubernetes, TalosOS, ArgoCD, Envoy, Redis, Jenkins, PostgreSQL, gRPC, and more, I focus on building efficient, profitable, and resilient systems that are production-ready and resource-aware.
 
 I believe observability is a core pillar of modern software, and Grafana’s tools have played a pivotal role in my personal and professional projects — from monitoring self-hosted infrastructure to fine-tuning distributed services. I'm particularly drawn to the open-source ethos and thoughtful design behind Grafana's ecosystem and strive to build solutions that reflect those same values.
 
-Whether working in Rust, Go, or Java, I bring a modern, adaptable, and low-level-capable mindset — from edge compute to backend orchestration. I earned my KCNA (Kubernetes and Cloud Native Associate) certification on 2024-01-27 and am currently pursuing Microsoft Azure certifications to broaden my understanding of public cloud infrastructure and enterprise-grade deployments.
+Whether working in Rust, Go, or Java, I bring a modern, adaptable, and low-level-capable mindset — from edge compute to physical machine orchestration. I earned my KCNA (Kubernetes and Cloud Native Associate) certification on 2024-01-27 and am currently pursuing Microsoft Azure certifications to broaden my understanding of public cloud infrastructure and enterprise-grade deployments.
 
 By combining hands-on experience in private, self-hosted systems with ongoing education in public cloud technologies, I aim to maintain a holistic grasp of modern infrastructure — across private, public, and hybrid deployments; With Azure, a leading provider trusted by Fortune 500 companies and government sectors representing a crucial piece of that puzzle. As I deepen my exposure to enterprise tooling, I plan to continue towards becoming a Kubernetes Certified Architect.
 
@@ -23,9 +23,11 @@ This project serves as both a technical showcase and a marker/milestone in my co
 
 This project is a demo of my ability to **design, implement, and deploy custom buisness needs in a cloud enviroment** using Kubernetes and Helm. The API will be exposed via a **RESTful HTTPS interface**, secured with **Envoy** as the gateway. The primary focus is to demonstrate the full power of the **Grafana observability ecosystem**, a personal of mine favorite for a long time, all seamlessly running in **Minikube** or a **public Kubernetes platform** (Azure), deployed through a **single umbrella Helm chart**.
 
-Because this is a demo project all content will be within this single repo, normally this would be seperated into distinct repos for each service/chart through a dedicated buisness account but prefer to keep it together for my personal account.
+Because this is a demo project all content will be within this single repo, normally I would be seperated into distinct repos for each service/chart through a dedicated buisness account but prefer to keep it together for my personal account.
 
-This project is to be completed in 5 days (2 planning, 3 for implementation)
+There will also be many missing features absent that would otherwise be best practice for production (Service-to-Service TLS, Persistent Storage, Secret Management/Rotation, CI/CD, etc); I do plan to update this demo in the future with said additions but for now the focus is again on the Grafana Stack.
+
+This project is planned to be completed in ~5 days (2 planning, 3 for implementation), this is meant to challenge myself to prove what Im capable of from (relative) scratch under limited time.
 
 ## 🧠 Key Goals
 
@@ -41,19 +43,25 @@ This project is to be completed in 5 days (2 planning, 3 for implementation)
 ### Infrastructure & Deployment
 - [Kubernetes](https://kubernetes.io/)
 - [Helm](https://helm.sh/)
-- [Minikube](https://minikube.sigs.k8s.io/docs/)
+- [Minikube](https://minikube.sigs.k8s.io/docs/) *(or k8s provider)*
 - [Envoy Proxy](https://www.envoyproxy.io/)
+- [PostgreSQL](https://www.postgresql.org/)
 
-### Observability Stack (by Grafana Labs)
-- [Grafana Dashboard](https://grafana.com/)
-- [Prometheus](https://prometheus.io/)
-- [Loki (Logs)](https://grafana.com/oss/loki/)
-- [Pyroscope (Profiling)](https://grafana.com/oss/pyroscope/)
-- [Tempo (Tracing)](https://grafana.com/oss/tempo/)
-- [Faro (Frontend Monitoring)](https://grafana.com/oss/faro/) *(optional)*
+### Observability Stack (Grafana Labs + Prometheus)
+- [Grafana Dashboard (Visualization)](https://grafana.com/)
+- [Prometheus (Metrics)](https://grafana.com/oss/prometheus/)
+- [Grafana Loki (Logs)](https://grafana.com/oss/loki/)
+- [Grafana Pyroscope (Profiling)](https://grafana.com/oss/pyroscope/)
+- [Grafana Tempo (Tracing)](https://grafana.com/oss/tempo/)
+- [Grafana Beyla (eBPF Auto-Instrumentation)](https://grafana.com/oss/beyla-ebpf/)
+- [Grafana Faro (Frontend Monitoring)](https://grafana.com/oss/faro/) *(optional, implement if time permits)*
 
-### Programming Language
+### Programming Language & Crates
 - [Rust](https://www.rust-lang.org/)
+- [Jsonwebtoken (JWT)](https://docs.rs/jsonwebtoken/latest/jsonwebtoken/index.html)
+- [Tonic (gRPC)](https://docs.rs/tonic/latest/tonic/)
+- [Axum (REST-API/Web)](https://docs.rs/axum/latest/axum/)
+- [Sqlx (SQL)](https://docs.rs/sqlx/latest/sqlx/)
 ---
 
 ## 💰 Demo Application: Example Banking API
@@ -74,7 +82,7 @@ A lightweight RESTful API simulating basic banking operations:
 
 ## 💬 Final Thoughts
 
-While I'm still new to some of these tools, this project highlights my:
+While I'm still learning some of these tools, this project highlights my:
 - ❤️ Passion for Grafana and observability.
 - 🔄 Adaptability and eagerness to learn modern cloud-native tooling.
 - 🛠️ Practical experience integrating complex systems in Kubernetes.
@@ -96,10 +104,10 @@ Core objectives:
 
 Microservices:
 - Static SPA Web Server
-- Login API
+- User Auth API
 - Bank API
-- JWT Authentication Service (using Ext_Authz [gRPC])
 - Envoy
+- Envoy JWT Authentication Service (using [Ext_Authz](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto) [gRPC])
 - Postgre (could be replaced with another solution)
 - Grafana Dashboard
 - Prometheus
@@ -143,8 +151,16 @@ Simple SQL Setup for the purposes of the demo
 - Used for login and buisness data
 - Connect to observability stack
 
-## Todo
-Setup Grafana Outline Once API Interactions are more clear
+Grafana Beyla will probably simplify Postgre Observability Set Up
+
+> Todo: Outline DB/Table Structure For Project
+
+> Todo: More Detailed DB Explination
+
+## Todo Grafana
+While Grafana Solutions are the main star of the show, it will be easiest to implement after all core buisness logic, then I will have all system interactions fully flushed out (for the purposes of this demo); **Giving a holistic view of the project's entire Observability Needs**
+
+As mentioned before I will likely be skipping longterm storage this demo, including Observability; In production is a different story, I may work on a future iteration showing how this demo can be expanded to handle its general and Observability storage needs.
 
 # 🤖 AI Assistance Acknowledgment
 
