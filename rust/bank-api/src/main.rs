@@ -1,6 +1,5 @@
 mod balance;
 mod contact;
-mod pending;
 mod transaction;
 
 use std::{collections::HashMap, time::Duration};
@@ -21,8 +20,6 @@ async fn main() -> AnyResult<()>{
             .route("/transaction", post(post_transaction_handler)) //Post Transactions Route
             .route("/contact", get(get_contact_handler)) //Get Contact Route
             .route("/contact", post(post_contact_handler)) //Post Contact Route
-            .route("/pending", get(get_pending_handler)) //Get Pending Route
-            .route("/pending", post(post_pending_handler)) //Post Pending Route
             .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool
     ).await?)
 }
@@ -87,23 +84,6 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
-
-//Pending (GET)
-async fn get_pending_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
-    match decode_claims(auth.token()){
-        Ok(claims) => pending::get_pending(&pool, &claims, &params).await, //Run Logic
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
-    }
-}
-
-//Pending (POST)
-async fn post_pending_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
-    match decode_claims(auth.token()){
-        Ok(claims) => pending::post_pending(&pool, &claims, &params).await, //Run Logic
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
-    }
-}
-
 
 //====================================================
 //?                 END OF HANDLERS

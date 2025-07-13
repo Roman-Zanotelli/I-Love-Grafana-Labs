@@ -18,6 +18,7 @@ pub struct Transaction{
     from: String, //who sent money
     to: String, //who recieved money
     amount: i32, //amount (in pennies)
+    request_timestamp: DateTime<Utc>, //timestamp of intial request
     processed_timestamp: Option<DateTime<Utc>>, //timestamp of completion
     status: Option<bool> //final staus (true = success, false = cancelled, None = pending)
 }
@@ -28,8 +29,10 @@ impl Parsable for Transaction {
             from: row.get("from"),
             to: row.get("to"),
             amount: row.get("amount"),
+            request_timestamp: row.get("request_timestamp"),
             processed_timestamp: row.get("processed_timestamp"),
             status: row.get("status"),
+            
         }
     }
 }
