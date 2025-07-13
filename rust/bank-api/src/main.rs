@@ -1,3 +1,104 @@
-fn main() {
-    println!("Hello, world!");
+mod balance;
+mod contact;
+mod pending;
+mod transaction;
+
+use std::{collections::HashMap, thread::spawn, time::Duration};
+
+use anyhow::Result as AnyResult;
+use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}};
+use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
+use jwt_util::decode::decode_claims;
+use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres};
+
+#[tokio::main]
+async fn main() -> AnyResult<()>{
+    //TODO: observability
+    Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
+        axum::Router::new()
+            .route("/balance", get(balance)) //Get Balance Route
+            .route("/transaction", get(get_transaction)) //Get Transactions Route
+            .route("/transaction", post(post_transaction)) //Post Transactions Route
+            .route("/contact", get(get_contact)) //Get Contact Route
+            .route("/contact", post(post_contact)) //Post Contact Route
+            .route("/pending", get(get_pending)) //Get Pending Route
+            .route("/pending", post(post_pending)) //Post Pending Route
+            .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool
+    ).await?)
 }
+
+//Init Postgre Pool
+async fn init_pool(url: &str) -> AnyResult<PgPool> {
+    //Create Pool
+    let pool = PgPoolOptions::new()
+        //Min Idle Connections
+        .min_connections(2)
+        //Idle Timeout
+        .idle_timeout(Duration::from_secs(300))
+        //Enable Testing Connection
+        .test_before_acquire(true)
+        //Connect
+        .connect(url)
+        .await?;
+    Ok(pool)
+}
+
+
+//====================================================
+//?                 ROUTE HANDLERS
+//====================================================
+
+
+async fn balance(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => balance::balance(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn get_transaction(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => transaction::get_transaction(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn post_transaction(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => transaction::post_transaction(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn get_contact(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => contact::get_contact(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn post_contact(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => contact::post_contact(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn get_pending(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => pending::get_pending(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+async fn post_pending(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+    match decode_claims(auth.token()){
+        Ok(claims) => pending::post_pending(&pool, &claims, &params).await, //Run Logic
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
+    }
+}
+
+
+//====================================================
+//?                 END OF HANDLERS
+//====================================================

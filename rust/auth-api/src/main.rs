@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
-    //TODO: observability initialization, database initialization, etc etc
+    //TODO: observability
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/sign_in", post(sign_in)) //Create sign in route
@@ -111,16 +111,13 @@ impl SignInRequest{
             //Fetch first
             .fetch_one(pool).await?;
 
-        //Verify Hash (cancel if invalid)
+        //Verify Hash
         match Argon2::default().verify_password(self.pass.as_bytes(), &argon2::PasswordHash::new(row.try_get("hash")?)?){
-            //Return account id
+            //If Valid Return Account Id
             Ok(_) => Ok(row.try_get("account_id")?),
-            //Return Err
+            //Else Return Err
             Err(_) => Err(AuthError::InvalidAuth),
-        }
-
-        
-        
+        }  
     }
 }
 

@@ -42,28 +42,20 @@ pub mod decode{
 
     //Internal logic for decoding a signed JWT claim
     fn _inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError>{
-        Arc::new(
+        
             jsonwebtoken::decode::<JwtClaims>(
                 signed_claim, 
                 JWT_DECODE_KEY.get_or_init(|| _decode_key()), 
                 JWT_VALIDATION.get_or_init(|| _validation())
             )
             .map(|token| token.claims)
-        )
         .track(signed_claim)
     }
 
-    //Default Sync Decode
-    #[cfg(feature = "sync-decode")]
     pub fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
         _inner_decode(signed_claim)
     }
 
-    //Async Decode
-    #[cfg(feature = "async-decode")]
-    pub async fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
-        _inner_decode(signed_claim)
-    }
 
     //init validation
     fn _validation() -> jsonwebtoken::Validation{
@@ -77,9 +69,9 @@ pub mod decode{
 
     //tracking implementation for decoding
     impl Track for Result<JwtClaims, JwtError>{
-        fn track(self, input: &str) -> Arc<Self>{
+        fn track(self, input: &str) -> Self{
             //TODO: Tracking
-            return Arc::new(self)
+            return self
         }
     }
 }
