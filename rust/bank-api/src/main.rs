@@ -59,10 +59,7 @@ async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, 
 //Transaction (GET)
 async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => {
-            let query = sqlx::query("TODO");
-            TransactionResponse::get_http_response(&pool, query).await
-        }, //Run Logic
+        Ok(claims) => TransactionResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -78,10 +75,7 @@ async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<B
 //Contact (GET)
 async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => {
-            let query = sqlx::query("TODO");
-            ContactResponse::get_http_response(&pool, query).await
-        }, //Run Logic
+        Ok(claims) => ContactResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -98,19 +92,26 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 //?                 END OF HANDLERS
 //====================================================
 
+//====================================================
+//?                    Traits
+//====================================================
+
 pub trait Queriable {
 
-    //POST logic is a bit too specific with transactions to have default impl
+    //Impl
     async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows;
+    fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a HashMap<String, String>) -> sqlx::query::Query<'a, Postgres, sqlx::postgres::PgArguments>;
+    
 
+    //Default
     //GET is just a SELECT statement
-    async fn get_query(pool: &Pool<Postgres>, query: sqlx::query::Query<'_, Postgres, sqlx::postgres::PgArguments>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
-        Ok(Self::parse_rows(&query.fetch_all(pool).await?))
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
+        Ok(Self::parse_rows(&Self::generate_get_query(&claims, &params).fetch_all(pool).await?))
     }
 
     //Convert GET Query into Http Response
-    async fn get_http_response(pool: &Pool<Postgres>, query: sqlx::query::Query<'_, Postgres, sqlx::postgres::PgArguments>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
-        match Self::get_query(pool, query).await{
+    async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+        match Self::get_query(pool, &claims, &params).await{
             Ok(resp) => match serde_json::to_string(&resp) {
                 Ok(json_resp) => (StatusCode::FOUND, json_resp),
                 Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
@@ -139,3 +140,7 @@ pub trait ParsableRow{
 pub trait ParsableRows{
     fn parse_rows(rows: &Vec<sqlx::postgres::PgRow>) -> Self;
 }
+
+//====================================================
+//?                 END OF Traits
+//====================================================

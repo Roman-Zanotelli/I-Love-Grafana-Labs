@@ -49,5 +49,9 @@ impl Queriable for TransactionResponse {
         let rows = sqlx::query("SQL TODO").fetch_all(pool).await?;
         Ok(Self::parse_rows(&rows))
     }
+    
+    fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a HashMap<String, String>) -> sqlx::query::Query<'a, Postgres, sqlx::postgres::PgArguments> {
+        todo!()
+    }
 }
 
