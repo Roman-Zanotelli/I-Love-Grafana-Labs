@@ -8,7 +8,10 @@ use anyhow::Result as AnyResult;
 use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}};
 use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
 use jwt_util::decode::decode_claims;
-use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres};
+use serde::Serialize;
+use sqlx::{postgres::PgPoolOptions, query, PgPool, Pool, Postgres};
+
+use crate::{balance::BalanceResponse, contact::ContactResponse, transaction::TransactionResponse};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
@@ -48,7 +51,7 @@ async fn init_pool(url: &str) -> AnyResult<PgPool> {
 //Balance
 async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => balance::balance(&pool, &claims).await, //Run Logic
+        Ok(claims) => BalanceResponse::get_http_reponse(&pool, &claims).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -56,7 +59,10 @@ async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, 
 //Transaction (GET)
 async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => transaction::get_transaction(&pool, &claims, &params).await, //Run Logic
+        Ok(claims) => {
+            let query = sqlx::query("TODO");
+            TransactionResponse::get_http_response(&pool, query).await
+        }, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -64,7 +70,7 @@ async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Be
 //Transaction (POST)
 async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => transaction::post_transaction(&pool, &claims, &params).await, //Run Logic
+        Ok(claims) => TransactionResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -72,7 +78,10 @@ async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<B
 //Contact (GET)
 async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => contact::get_contact(&pool, &claims, &params).await, //Run Logic
+        Ok(claims) => {
+            let query = sqlx::query("TODO");
+            ContactResponse::get_http_response(&pool, query).await
+        }, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -80,7 +89,7 @@ async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer
 //Contact (POST)
 async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => contact::post_contact(&pool, &claims, &params).await, //Run Logic
+        Ok(claims) => ContactResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -90,11 +99,43 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 //====================================================
 
 pub trait Queriable {
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> AnyResult<String>;
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> AnyResult<String>;
-    
+
+    //POST logic is a bit too specific with transactions to have default impl
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows;
+
+    //GET is just a SELECT statement
+    async fn get_query(pool: &Pool<Postgres>, query: sqlx::query::Query<'_, Postgres, sqlx::postgres::PgArguments>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
+        Ok(Self::parse_rows(&query.fetch_all(pool).await?))
+    }
+
+    //Convert GET Query into Http Response
+    async fn get_http_response(pool: &Pool<Postgres>, query: sqlx::query::Query<'_, Postgres, sqlx::postgres::PgArguments>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+        match Self::get_query(pool, query).await{
+            Ok(resp) => match serde_json::to_string(&resp) {
+                Ok(json_resp) => (StatusCode::FOUND, json_resp),
+                Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
+            },
+            Err(query_err) => (StatusCode::NOT_FOUND, query_err.to_string()),
+        }
+    }
+
+    //Convert POST Query into Http Response
+    async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+        match Self::post_query(pool, claims, params).await{
+            Ok(resp) => match serde_json::to_string(&resp) {
+                Ok(json_resp) => (StatusCode::OK, json_resp),
+                Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
+            },
+            Err(query_err) => (StatusCode::NOT_MODIFIED, query_err.to_string()),
+        }
+    }
+
 }
 
-pub trait Parsable{
+pub trait ParsableRow{
     fn parse_row(row: &sqlx::postgres::PgRow) -> Self;
+}
+
+pub trait ParsableRows{
+    fn parse_rows(rows: &Vec<sqlx::postgres::PgRow>) -> Self;
 }

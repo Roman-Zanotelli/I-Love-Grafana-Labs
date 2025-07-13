@@ -1,36 +1,43 @@
-use std::collections::HashMap;
-
 use axum::http::StatusCode;
 use jwt_util::core::JwtClaims;
 use serde::Serialize;
-use sqlx::{postgres::PgRow, Pool, Postgres, Row};
-
-use anyhow::Result as AnyResult;
+use sqlx::{postgres::PgRow, Error as SQLxError, Pool, Postgres, Row};
 
 #[derive(Debug, Serialize)]
-struct BalanceResponse{
+pub struct BalanceResponse{
     balance: i64, //account balance
-    daily_transfer_max: i32, //daily transfer limit
-    daily_transfer_used: i32, //daily transfer used
+    daily_send_limit: i32,
+    daily_send_used: i32,
+    daily_recieve_limit: i32,
+    daily_recieve_used: i32,
 }
 
 impl BalanceResponse{
-    async fn query(pool: &Pool<Postgres>, id: &str) -> AnyResult<String>{
-        BalanceResponse::parse(sqlx::query("SELECT * FROM balances WHERE id = $1").bind(id).fetch_one(pool).await?) 
+    async fn query(pool: &Pool<Postgres>, id: &str) -> Result<Self, SQLxError>{
+        
+        Ok(BalanceResponse::parse(sqlx::query("SELECT * FROM balances WHERE id = $1").bind(id).fetch_one(pool).await?))
     }
-    
-    fn parse(row: PgRow) -> AnyResult<String>{
-        Ok(serde_json::to_string(&BalanceResponse{
+
+    fn parse(row: PgRow) -> Self{
+        BalanceResponse{
             balance: row.get("balance"),
-            daily_transfer_max: row.get("daily_transfer_max"),
-            daily_transfer_used: row.get("daily_transfer_used"),
-        })?)
+            daily_send_limit: row.get("daily_send_limit"),
+            daily_send_used: row.get("daily_send_used"),
+            daily_recieve_limit: row.get("daily_recieve_limit"),
+            daily_recieve_used: row.get("daily_recieve_used"),
+        }
+    }
+
+
+
+    pub async fn get_http_reponse(pool: &Pool<Postgres>, claims: &JwtClaims) -> (StatusCode, String){
+        match BalanceResponse::query(pool, &claims.id).await{
+            Ok(resp) => match serde_json::to_string(&resp) {
+                Ok(json_resp) => (StatusCode::OK, json_resp),
+                Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
+            },
+            Err(query_err) => (StatusCode::NOT_FOUND, query_err.to_string()),
+        }
     }
 }
 
-pub async fn balance(pool: &Pool<Postgres>, claims: &JwtClaims) -> (StatusCode, String){
-    match BalanceResponse::query(pool, &claims.id).await{
-        Ok(resp) => (StatusCode::OK, resp),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-    }
-}
