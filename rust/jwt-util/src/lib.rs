@@ -41,7 +41,7 @@ pub mod decode{
     static JWT_VALIDATION: OnceLock<jsonwebtoken::Validation> = OnceLock::new();
 
     //Internal logic for decoding a signed JWT claim
-    fn _inner_decode(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
+    fn _inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError>{
         Arc::new(
             jsonwebtoken::decode::<JwtClaims>(
                 signed_claim, 
@@ -55,13 +55,13 @@ pub mod decode{
 
     //Default Sync Decode
     #[cfg(feature = "sync-decode")]
-    pub fn decode_claims(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
+    pub fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
         _inner_decode(signed_claim)
     }
 
     //Async Decode
     #[cfg(feature = "async-decode")]
-    pub async fn decode_claims(signed_claim: &str) -> Arc<Result<JwtClaims, JwtError>> {
+    pub async fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
         _inner_decode(signed_claim)
     }
 
@@ -76,10 +76,10 @@ pub mod decode{
     }
 
     //tracking implementation for decoding
-    impl Track for Arc<Result<JwtClaims, JwtError>>{
-        fn track(self, input: &str) -> Self{
+    impl Track for Result<JwtClaims, JwtError>{
+        fn track(self, input: &str) -> Arc<Self>{
             //TODO: Tracking
-            return self
+            return Arc::new(self)
         }
     }
 }
@@ -104,19 +104,18 @@ pub mod encode{
     static JWT_ISS: OnceLock<String> = OnceLock::new();
 
     //Encode a claim by user id (later add a more flexible method for general claims)
-    pub fn encode_claims(id: &str) -> Arc<Result<String, JwtError>> {
-        Arc::new(
-            jsonwebtoken::encode(
-                JWT_HEADER.get_or_init(|| _header()), 
-                &JwtClaims{
-                    id: id.to_string(),
+    pub fn encode_claims(id: String) -> Result<String, JwtError> {
+        let claim = JwtClaims{
+                    id,
                     exp: Utc::now().timestamp() as usize + JWT_DURATION.get_or_init(|| _duration()),
                     iss: JWT_ISS.get_or_init(|| _iss()).clone()
-                },
-                JWT_ENCODE_KEY.get_or_init(|| _encode_key())
-            )
-        )
-        .track(id)
+        };
+        
+        jsonwebtoken::encode(
+            JWT_HEADER.get_or_init(|| _header()), 
+            &claim,
+            JWT_ENCODE_KEY.get_or_init(|| _encode_key())
+        ).track(&claim.id)
     }
 
 
@@ -141,7 +140,7 @@ pub mod encode{
     }
 
     //tracking implementation for encoding
-    impl Track for Arc<Result<String, JwtError>>{
+    impl Track for Result<String, JwtError>{
         fn track(self, input: &str) -> Self{
             //TODO: Tracking
             return self
