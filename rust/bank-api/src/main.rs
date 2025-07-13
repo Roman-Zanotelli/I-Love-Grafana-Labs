@@ -49,9 +49,9 @@ async fn init_pool(url: &str) -> AnyResult<PgPool> {
 //====================================================
 
 //Balance
-async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
-        Ok(claims) => balance::balance(&pool, &claims, &params).await, //Run Logic
+        Ok(claims) => balance::balance(&pool, &claims).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
     }
 }
@@ -108,3 +108,8 @@ async fn post_pending_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 //====================================================
 //?                 END OF HANDLERS
 //====================================================
+
+pub trait Queriable {
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>);
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>);
+}
