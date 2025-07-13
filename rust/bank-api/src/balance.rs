@@ -15,7 +15,7 @@ pub struct BalanceResponse{
 impl BalanceResponse{
     async fn query(pool: &Pool<Postgres>, id: &str) -> Result<Self, SQLxError>{
         
-        Ok(BalanceResponse::parse(sqlx::query("SELECT * FROM balances WHERE id = $1").bind(id).fetch_one(pool).await?))
+        Ok(BalanceResponse::parse(sqlx::query("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(pool).await?))
     }
 
     fn parse(row: PgRow) -> Self{

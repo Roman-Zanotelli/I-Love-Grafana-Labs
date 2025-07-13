@@ -1,17 +1,18 @@
 mod balance;
 mod contact;
 mod transaction;
+mod filter;
 
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 use anyhow::Result as AnyResult;
 use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}};
 use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
 use jwt_util::decode::decode_claims;
-use serde::Serialize;
-use sqlx::{postgres::PgPoolOptions, query, PgPool, Pool, Postgres};
+use serde::{de::DeserializeOwned, Serialize};
+use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 
-use crate::{balance::BalanceResponse, contact::ContactResponse, transaction::TransactionResponse};
+use crate::{balance::BalanceResponse, contact::ContactResponse, filter::{ContactFilter, TransactionFilter}, transaction::TransactionResponse};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
@@ -57,7 +58,7 @@ async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, 
 }
 
 //Transaction (GET)
-async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<TransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -65,7 +66,7 @@ async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Be
 }
 
 //Transaction (POST)
-async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<TransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -73,7 +74,7 @@ async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<B
 }
 
 //Contact (GET)
-async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<ContactFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => ContactResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -81,7 +82,7 @@ async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer
 }
 
 //Contact (POST)
-async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<HashMap<String, String>>) -> impl IntoResponse{
+async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<ContactFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => ContactResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -96,21 +97,21 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 //?                    Traits
 //====================================================
 
-pub trait Queriable {
+pub trait Queriable<Filter> where  Filter: DeserializeOwned{
 
     //Impl
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows;
-    fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a HashMap<String, String>) -> sqlx::query::Query<'a, Postgres, sqlx::postgres::PgArguments>;
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows;
+    fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a Filter) -> QueryBuilder<'a, Postgres>;
     
 
     //Default
     //GET is just a SELECT statement
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
-        Ok(Self::parse_rows(&Self::generate_get_query(&claims, &params).fetch_all(pool).await?))
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
+        Ok(Self::parse_rows(&Self::generate_get_query(&claims, &params).build().fetch_all(pool).await?))
     }
 
     //Convert GET Query into Http Response
-    async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+    async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
         match Self::get_query(pool, &claims, &params).await{
             Ok(resp) => match serde_json::to_string(&resp) {
                 Ok(json_resp) => (StatusCode::FOUND, json_resp),
@@ -121,7 +122,7 @@ pub trait Queriable {
     }
 
     //Convert POST Query into Http Response
-    async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+    async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
         match Self::post_query(pool, claims, params).await{
             Ok(resp) => match serde_json::to_string(&resp) {
                 Ok(json_resp) => (StatusCode::OK, json_resp),
