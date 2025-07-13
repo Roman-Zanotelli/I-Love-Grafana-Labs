@@ -110,6 +110,11 @@ async fn post_pending_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 //====================================================
 
 pub trait Queriable {
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>);
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>);
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> AnyResult<String>;
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &HashMap<String, String>) -> AnyResult<String>;
+    
+}
+
+pub trait Parsable{
+    fn parse_row(row: &sqlx::postgres::PgRow) -> Self;
 }
