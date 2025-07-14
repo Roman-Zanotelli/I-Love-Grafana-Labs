@@ -1,7 +1,9 @@
 use axum::http::StatusCode;
 use jwt_util::core::JwtClaims;
 use serde::Serialize;
-use sqlx::{Error as SQLxError, Pool, Postgres};
+use sqlx::{query_as, Executor, Pool, Postgres};
+
+use crate::{error::BankError, transaction::transaction::TAction};
 
 #[derive(Debug, Serialize)]
 #[derive(sqlx::FromRow)]
@@ -15,8 +17,8 @@ pub struct BalanceResponse{
 }
 
 impl BalanceResponse{
-    async fn query(pool: &Pool<Postgres>, id: &str) -> Result<Self, SQLxError>{
-        Ok(sqlx::query_as("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(pool).await?)
+    async fn query<'e, E>(exec: E, id: &str) -> Result<Self, BankError> where E: Executor<'e, Database = Postgres>,{
+        Ok(sqlx::query_as("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(exec).await?)
     }
 
     pub async fn get_http_reponse(pool: &Pool<Postgres>, claims: &JwtClaims) -> (StatusCode, String){
@@ -28,5 +30,21 @@ impl BalanceResponse{
             Err(query_err) => (StatusCode::NOT_FOUND, query_err.to_string()),
         }
     }
+
+    pub fn can(&self, action: &TAction, amount: &i32) -> Result<(), BankError>{
+        match action {
+            TAction::SEND => todo!(),
+            TAction::RECV => todo!(),
+            _ => todo!()
+        }
+    }
 }
 
+
+pub(super) async fn select_balance_for_update<'a>(user_id: &str,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<Option<BalanceResponse>, BankError>{
+    Ok(query_as::<_, BalanceResponse>(r#"
+        SELECT * FROM balances
+        WHERE user_id = $1
+        FOR UPDATE
+    "#).bind(user_id).fetch_optional(tx.as_mut()).await?)
+}

@@ -1,28 +1,10 @@
-use sqlx::{Pool, Postgres, QueryBuilder};
+use std::fmt::Display;
 
-use crate::{transaction::{action::TAction, post::*, transaction::{TransactionFilter, TransactionResponse}}, Queriable};
+use sqlx::{query_as, Pool, Postgres, QueryBuilder};
 
-impl Default for TransactionResponse{
-    fn default() -> Self {
-        Self { transactions: None }
-    }
-}
+use crate::{balance::select_balance_for_update, error::BankError, transaction::transaction::{BankTransaction, TAction, TransactionFilter, TransactionResponse}, Queriable};
 
 impl Queriable<TransactionFilter> for TransactionResponse {
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> Result<Self, sqlx::Error> where Self: Sized {
-        if let (Some(action), account_id) = (&params.action, &claims.id){
-            match (action, &params.transaction_id, &params.contact_id) {
-                (TAction::CONFIRM, Some(transaction_id), _) => confirm(account_id, transaction_id, pool).await,
-                (TAction::DENY, Some(transaction_id), _) => deny(account_id, transaction_id, pool).await,
-                (TAction::SEND(amount), _, Some(contact_id)) => send(account_id, contact_id, &amount, pool).await,
-                (TAction::RECV(amount), _, Some(contact_id)) => recv(account_id, contact_id, &amount, pool).await,
-                _ => Ok(TransactionResponse::default())
-            }
-        }else{
-            Ok(TransactionResponse::default())
-        }
-    }
-    
     fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a TransactionFilter) -> QueryBuilder<'a, Postgres> {
         let mut qb = QueryBuilder::new("SELECT * FROM transactions WHERE (user_id = ");
         qb.push_bind(&claims.id);
@@ -50,7 +32,7 @@ impl Queriable<TransactionFilter> for TransactionResponse {
 
         if let Some(action) = &params.action{
             qb.push(" AND action = ");
-            qb.push_bind(action.as_str());
+            qb.push_bind(action);
         }
 
         if let Some(amount) = &params.less_than{
@@ -66,27 +48,116 @@ impl Queriable<TransactionFilter> for TransactionResponse {
         qb
     }
     
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> Result<Self, sqlx::Error> where Self: Sized {
-        Ok(TransactionResponse { transactions: Some(TransactionResponse::generate_get_query(claims, params).build_query_as().fetch_all(pool).await?) })
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> Result<Self, BankError> where Self: Sized {
+        Ok(TransactionResponse { transactions: TransactionResponse::generate_get_query(claims, params).build_query_as().fetch_all(pool).await? })
     }
-    
-    async fn get_http_response(pool: &sqlx::Pool<sqlx::Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> (axum::http::StatusCode, String) where Self: Sized + serde::Serialize {
-        match Self::get_query(pool, &claims, &params).await{
-            Ok(resp) => match serde_json::to_string(&resp) {
-                Ok(json_resp) => (axum::http::StatusCode::FOUND, json_resp),
-                Err(json_err) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
-            },
-            Err(query_err) => (axum::http::StatusCode::NOT_FOUND, query_err.to_string()),
-        }
+
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> Result<Self, BankError> where Self: Sized {
+            match (&claims.id, &params.action , &params.amount, &params.transaction_id, &params.contact_id) {
+                (account_id, Some(TAction::CONFIRM), _, Some(transaction_id), _) => Self::confirm(account_id, transaction_id, pool).await,
+                (account_id, Some(TAction::DENY), _, Some(transaction_id), _) => Self::deny(account_id, transaction_id, pool).await,
+                (account_id, Some(TAction::SEND), Some(amount), _, Some(contact_id)) => Self::send(account_id, contact_id, &amount, pool).await,
+                (account_id, Some(TAction::RECV), Some(amount), _, Some(contact_id)) => Self::recv(account_id, contact_id, &amount, pool).await,
+                _ => Err(BankError::InvalidParams)
+            }
+        
     }
+}
+
+impl TransactionResponse{
+    async fn send(user_id: &str, contact_id: &str, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+        let mut tx: sqlx::Transaction<'static, Postgres> = pool.begin().await?;
+
+        //Lock User Balance
+        select_balance_for_update(user_id, &mut tx).await?
+            //Throw err if none
+            .ok_or(BankError::NullBalance(user_id.to_owned()))?
+            //Throw err if cant send amount
+            .can(&TAction::SEND, amount)?;
+
+        //Lock Contact Balance
+        select_balance_for_update(contact_id, &mut tx).await?
+            //Throw err if none
+            .ok_or(BankError::NullBalance(contact_id.to_owned()))?
+            //Throw err if cant recv amount
+            .can(&TAction::RECV, amount)?;
+
+        //TODO: Transfer if both succeed
+        let resp = todo!();
+
+
+        //Commit Changes
+        tx.commit().await?;
+        resp
+    }
+
+    async fn recv(user_id: &str, contact_id: &str, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+        let mut tx: sqlx::Transaction<'static, Postgres> = pool.begin().await?;
+        //TODO: generate a pending request transaction
+        let resp = todo!();
+        
+        //Commit Changes
+        tx.commit().await?;
+        resp
+    }
+
+    async fn confirm(user_id: &str, transaction_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+        let mut tx: sqlx::Transaction<'static, Postgres> = pool.begin().await?;
+        //Select Transaction
+        let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
+            //Complete Transaction
+            .complete_transacion(&mut tx).await;
+        //Commit
+        tx.commit().await?;
+        //Return Result
+        resp
+    }
+
+    async fn deny(user_id: &str, transaction_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+        let mut tx: sqlx::Transaction<'static, Postgres> = pool.begin().await?;
+        //Select Transaction
+        let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
+            //Cancel Transaction
+            .cancel_transacion(&mut tx).await;
+        //Commit
+        tx.commit().await?;
+        //Return Result
+        resp
+    }
+
+}
+
+
+impl BankTransaction{
+    async fn complete_transacion<'a>(&self,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<TransactionResponse, BankError>{
+        todo!()
+    }
+    async fn cancel_transacion<'a>(&self,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<TransactionResponse, BankError>{
+        todo!()
+    }
+    async fn select_for_update<'a>(user_id: &str, transaction_id: &str,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<Self, BankError>{
+    //Setup Query
+    query_as::<_, Self>(
+        r#"
+        SELECT * FROM  transactions
+        WHERE contact_id = $1 AND transaction_id = $2
+        FOR UPDATE 
+        "#
+    )
+    //Bind Values
+    .bind(user_id).bind(transaction_id)
+    //Execute returning optional BankTransaction
+    .fetch_optional(tx.as_mut()).await?
+    //If it doesnt exist return custom error
+    .ok_or(BankError::InvalidBankTransactionUpdateSelection)
+    }
+
     
-    async fn post_http_response(pool: &sqlx::Pool<sqlx::Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> (axum::http::StatusCode, String) where Self: Sized  + serde::Serialize{
-        match Self::post_query(pool, claims, params).await{
-            Ok(resp) => match serde_json::to_string(&resp) {
-                Ok(json_resp) => (axum::http::StatusCode::OK, json_resp),
-                Err(json_err) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
-            },
-            Err(query_err) => (axum::http::StatusCode::NOT_MODIFIED, query_err.to_string()),
-        }
+}
+
+
+impl Display for TAction{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }

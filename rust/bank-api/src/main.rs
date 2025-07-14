@@ -1,17 +1,19 @@
 mod balance;
 mod contact;
 mod transaction;
+mod error;
 
 use std::time::Duration;
 
 use anyhow::Result as AnyResult;
-use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}};
+use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}, Json};
 use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
 use jwt_util::decode::decode_claims;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 
-use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, transaction::transaction::{TransactionFilter, TransactionResponse}};
+
+use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, error::BankError, transaction::transaction::{TransactionFilter, TransactionResponse}};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
@@ -21,6 +23,7 @@ async fn main() -> AnyResult<()>{
             .route("/balance", get(balance_handler)) //Get Balance Route
             .route("/transaction", get(get_transaction_handler)) //Get Transactions Route
             .route("/transaction", post(post_transaction_handler)) //Post Transactions Route
+            .route("/transaction/pending", post(post_transaction_handler)) //Post Transactions Route
             .route("/contact", get(get_contact_handler)) //Get Contact Route
             .route("/contact", post(post_contact_handler)) //Post Contact Route
             .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool
@@ -65,7 +68,7 @@ async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Be
 }
 
 //Transaction (POST)
-async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<TransactionFilter>) -> impl IntoResponse{
+async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<TransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -81,7 +84,7 @@ async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer
 }
 
 //Contact (POST)
-async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<ContactFilter>) -> impl IntoResponse{
+async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<ContactFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => ContactResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -99,14 +102,11 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 pub trait Queriable<Filter> where  Filter: DeserializeOwned{
 
     //Impl
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized;
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, BankError> where Self: Sized;
     fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a Filter) -> QueryBuilder<'a, Postgres>;
-    
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, BankError> where Self: Sized;
 
     //Default
-    //GET is just a SELECT statement
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized;
-
     //Convert GET Query into Http Response
     async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + Serialize {
         match Self::get_query(pool, &claims, &params).await{
