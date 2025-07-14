@@ -2,8 +2,11 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::Type;
 
-use crate::{ transaction::{action::TAction, status::TStatus}};
+use crate::transaction::action::TAction;
+
+
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -22,6 +25,14 @@ pub struct Transaction{
     request_timestamp: DateTime<Utc>, //timestamp of intial request
     processed_timestamp: Option<DateTime<Utc>>, //timestamp of completion
     status: TStatus //Current Status
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum TStatus {
+    CONFIRMED,
+    PENDING,
+    DENIED
 }
 
 
