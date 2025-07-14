@@ -11,8 +11,9 @@ pub struct ContactResponse{
 #[derive(sqlx::FromRow)]
 #[serde(rename_all = "lowercase")]
 pub struct Contact{
+    user_id: String,  //Contact Owner
     contact_name: String, //Display Name
-    contact_id: String, //Acount ID
+    contact_id: String, //Acount ID of Contact
     is_fav: Option<bool> //True if favorite, False if just saved, None if not saved
 }
 
