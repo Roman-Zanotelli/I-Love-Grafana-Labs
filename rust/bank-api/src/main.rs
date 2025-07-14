@@ -12,7 +12,7 @@ use jwt_util::decode::decode_claims;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 
-use crate::{balance::BalanceResponse, contact::ContactResponse, filter::{ContactFilter, TransactionFilter}, transaction::TransactionResponse};
+use crate::{balance::BalanceResponse, contact::contact::ContactResponse, filter::{ContactFilter, TransactionFilter}, transaction::transaction::TransactionResponse};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{

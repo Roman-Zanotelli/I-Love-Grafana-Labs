@@ -1,10 +1,11 @@
 use axum::http::StatusCode;
 use jwt_util::core::JwtClaims;
 use serde::Serialize;
-use sqlx::{postgres::PgRow, Error as SQLxError, Pool, Postgres, Row};
+use sqlx::{Error as SQLxError, Pool, Postgres};
 
 #[derive(Debug, Serialize)]
 #[derive(sqlx::FromRow)]
+#[serde(rename_all = "lowercase")]
 pub struct BalanceResponse{
     balance: i64, //account balance
     daily_send_limit: i32,
@@ -17,8 +18,6 @@ impl BalanceResponse{
     async fn query(pool: &Pool<Postgres>, id: &str) -> Result<Self, SQLxError>{
         Ok(sqlx::query_as("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(pool).await?)
     }
-
-
 
     pub async fn get_http_reponse(pool: &Pool<Postgres>, claims: &JwtClaims) -> (StatusCode, String){
         match BalanceResponse::query(pool, &claims.id).await{
