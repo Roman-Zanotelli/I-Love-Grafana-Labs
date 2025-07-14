@@ -58,7 +58,6 @@ impl Default for TransactionResponse{
     }
 }
 
-
 impl Queriable<TransactionFilter> for TransactionResponse {
     async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &TransactionFilter) -> Result<Self, sqlx::Error> where Self: Sized {
         if let (Some(action), account_id) = (&params.action, &claims.id){

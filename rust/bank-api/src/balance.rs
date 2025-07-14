@@ -4,6 +4,7 @@ use serde::Serialize;
 use sqlx::{postgres::PgRow, Error as SQLxError, Pool, Postgres, Row};
 
 #[derive(Debug, Serialize)]
+#[derive(sqlx::FromRow)]
 pub struct BalanceResponse{
     balance: i64, //account balance
     daily_send_limit: i32,
@@ -14,18 +15,7 @@ pub struct BalanceResponse{
 
 impl BalanceResponse{
     async fn query(pool: &Pool<Postgres>, id: &str) -> Result<Self, SQLxError>{
-        
-        Ok(BalanceResponse::parse(sqlx::query("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(pool).await?))
-    }
-
-    fn parse(row: PgRow) -> Self{
-        BalanceResponse{
-            balance: row.get("balance"),
-            daily_send_limit: row.get("daily_send_limit"),
-            daily_send_used: row.get("daily_send_used"),
-            daily_recieve_limit: row.get("daily_recieve_limit"),
-            daily_recieve_used: row.get("daily_recieve_used"),
-        }
+        Ok(sqlx::query_as("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(pool).await?)
     }
 
 
