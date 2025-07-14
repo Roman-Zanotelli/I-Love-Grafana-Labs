@@ -2,7 +2,8 @@ use thiserror::Error;
 use sqlx::Error as SqlxError;
 use serde_json::Error as JsonError;
 
-use crate::transaction::transaction::TAction;
+use crate::transaction::transaction::BankAction;
+
 
 #[derive(Debug, Error)]
 pub enum BankError {
@@ -15,7 +16,7 @@ pub enum BankError {
     #[error("invalid {action} transacion, reason: {reason}")]
     InvalidTransaction{
         reason: String,
-        action: TAction
+        action: BankAction
     },
 
     #[error("balance for id {0} does not exist")]
@@ -26,5 +27,8 @@ pub enum BankError {
 
     #[error("one or more missing/invalid params")]
     InvalidParams,
+
+    #[error("missing/invalid action")]
+    InvalidAction,
 
 }

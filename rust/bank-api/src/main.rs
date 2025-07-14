@@ -13,7 +13,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 
 
-use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, error::BankError, transaction::transaction::{TransactionFilter, TransactionResponse}};
+use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, error::BankError, transaction::transaction::{BankTransactionFilter, TransactionResponse}};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
@@ -51,6 +51,8 @@ async fn init_pool(url: &str) -> AnyResult<PgPool> {
 //?                 ROUTE HANDLERS
 //====================================================
 
+//todo: write a decode_claims wrapper or something that consumes a closure to execute the logic without needing to rewrite all the match cases (could do 2 closurs response on OK and response on Err that handles error pattern matching once)
+
 //Balance
 async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
@@ -60,7 +62,7 @@ async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, 
 }
 
 //Transaction (GET)
-async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<TransactionFilter>) -> impl IntoResponse{
+async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<BankTransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -68,7 +70,7 @@ async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Be
 }
 
 //Transaction (POST)
-async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<TransactionFilter>) -> impl IntoResponse{
+async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<BankTransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "JWT Error".to_string()), //Proxy Pre-Auth should catch (checking again for indepth security)
@@ -109,24 +111,44 @@ pub trait Queriable<Filter> where  Filter: DeserializeOwned{
     //Default
     //Convert GET Query into Http Response
     async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + Serialize {
+        
+        //Calls get query impl
         match Self::get_query(pool, &claims, &params).await{
+            
+            //If Ok convert to json
             Ok(resp) => match serde_json::to_string(&resp) {
+                //respond
                 Ok(json_resp) => (StatusCode::FOUND, json_resp),
+                //json failed to parse
                 Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
             },
+
+            //if err
+            //TODO: Add more granular error response/tracking
             Err(query_err) => (StatusCode::NOT_FOUND, query_err.to_string()),
         }
+
     }
 
     //Convert POST Query into Http Response
     async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized  + Serialize{
+
+        //Calls post query impl
         match Self::post_query(pool, claims, params).await{
+
+            //If Ok convert to json
             Ok(resp) => match serde_json::to_string(&resp) {
+                //respond
                 Ok(json_resp) => (StatusCode::OK, json_resp),
+                //json failed to parse
                 Err(json_err) => (StatusCode::INTERNAL_SERVER_ERROR, json_err.to_string()),
             },
+
+            //if err
+            //TODO: Add more granular error response/tracking
             Err(query_err) => (StatusCode::NOT_MODIFIED, query_err.to_string()),
         }
+
     }
 
 }

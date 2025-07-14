@@ -3,7 +3,7 @@ use jwt_util::core::JwtClaims;
 use serde::Serialize;
 use sqlx::{query_as, Executor, Pool, Postgres};
 
-use crate::{error::BankError, transaction::transaction::TAction};
+use crate::{error::BankError, transaction::transaction::BankAction};
 
 #[derive(Debug, Serialize)]
 #[derive(sqlx::FromRow)]
@@ -31,10 +31,10 @@ impl BalanceResponse{
         }
     }
 
-    pub fn can(&self, action: &TAction, amount: &i32) -> Result<(), BankError>{
+    pub fn can(&self, action: &BankAction, amount: &i32) -> Result<(), BankError>{
         match action {
-            TAction::SEND => todo!(),
-            TAction::RECV => todo!(),
+            BankAction::SEND => todo!(),
+            BankAction::RECV => todo!(),
             _ => todo!()
         }
     }
