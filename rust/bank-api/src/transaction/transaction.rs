@@ -24,7 +24,7 @@ pub struct BankTransaction{
     pub transaction_id: String, //transaction id
     pub transaction_action: BankAction, //Action
     pub transaction_amount: i32,
-    pub request_timestamp: DateTime<Utc>, //timestamp of intial request
+    pub request_timestamp: Option<DateTime<Utc>>, //timestamp of intial request
     pub processed_timestamp: Option<DateTime<Utc>>, //timestamp of completion
     pub status: BankStatus //Current Status
 }

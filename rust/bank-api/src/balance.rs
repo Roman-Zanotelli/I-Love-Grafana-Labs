@@ -1,7 +1,9 @@
+use std::ops::Neg;
+
 use axum::http::StatusCode;
 use jwt_util::core::JwtClaims;
 use serde::Serialize;
-use sqlx::{query_as, Executor, Pool, Postgres};
+use sqlx::{query, query_as, Executor, Pool, Postgres};
 
 use crate::{error::BankError, transaction::transaction::BankAction};
 
@@ -47,4 +49,47 @@ pub(super) async fn select_balance_for_update<'a>(user_id: &str,  tx: &mut sqlx:
         WHERE user_id = $1
         FOR UPDATE
     "#).bind(user_id).fetch_optional(tx.as_mut()).await?)
+}
+
+pub(super) async fn transfer_balance<'a>(from: &str, to: &str, amount: &i32, tx:  &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
+    //Lock User Balance
+        select_balance_for_update(from, tx).await?
+            //Throw err if none
+            .ok_or(BankError::NullBalance(from.to_owned()))?
+            //Throw err if cant send amount
+            .can(&BankAction::SEND, amount)?;
+
+        //Lock Contact Balance
+        select_balance_for_update(to, tx).await?
+            //Throw err if none
+            .ok_or(BankError::NullBalance(to.to_owned()))?
+            //Throw err if cant recv amount
+            .can(&BankAction::RECV, amount)?;
+        
+    change_balance(from, &(amount.abs().neg()), tx).await?;
+    change_balance(to, &(amount.abs()), tx).await
+}
+
+pub(super) async fn change_balance<'a>(user_id: &str, amount: &i32,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
+    match amount {
+        ..0 => {
+            query::<Postgres>(r#"
+            UPDATE balances
+            SET
+                balance = balance + $1,
+                daily_send_used = daily_send_used + $1,
+            WHERE account_id = $2
+            "#).bind(amount).bind(user_id).execute(tx.as_mut()).await?;
+        },
+        0.. => {
+            query::<Postgres>(r#"
+            UPDATE balances
+            SET
+                balance = balance + $1,
+                daily_recieve_used = daily_recieve_used + $1,
+            WHERE account_id = $2
+            "#).bind(amount).bind(user_id).execute(tx.as_mut()).await?;
+        }
+    };
+    Ok(())
 }

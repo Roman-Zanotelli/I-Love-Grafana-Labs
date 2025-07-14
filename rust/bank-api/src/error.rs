@@ -31,4 +31,10 @@ pub enum BankError {
     #[error("missing/invalid action")]
     InvalidAction,
 
+    #[error("transaction not pending")]
+    NotPending,
+
+    #[error("transaction could not be created")]
+    TransactionCreateFailed,
+
 }

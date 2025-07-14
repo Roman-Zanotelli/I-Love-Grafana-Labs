@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use sqlx::{query_as, Pool, Postgres, QueryBuilder, Transaction as SQLTransaction};
 
-use crate::{balance::select_balance_for_update, error::BankError, transaction::transaction::{BankAction, BankTransaction, BankTransactionFilter, TransactionResponse}, Queriable};
+use crate::{balance::{select_balance_for_update, transfer_balance}, error::BankError, transaction::transaction::{BankAction, BankStatus, BankTransaction, BankTransactionFilter, TransactionResponse}, Queriable};
 
 impl Queriable<BankTransactionFilter> for TransactionResponse {
 
@@ -98,21 +98,6 @@ impl TransactionResponse{
     async fn send(user_id: &str, contact_id: &str, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
 
-        //Lock User Balance
-        select_balance_for_update(user_id, &mut tx).await?
-            //Throw err if none
-            .ok_or(BankError::NullBalance(user_id.to_owned()))?
-            //Throw err if cant send amount
-            .can(&BankAction::SEND, amount)?;
-
-        //Lock Contact Balance
-        select_balance_for_update(contact_id, &mut tx).await?
-            //Throw err if none
-            .ok_or(BankError::NullBalance(contact_id.to_owned()))?
-            //Throw err if cant recv amount
-            .can(&BankAction::RECV, amount)?;
-
-        
         //Transaction logic (No commit)
         let resp = BankTransaction::send_transacion(user_id, contact_id, amount, &mut tx).await?;
 
@@ -141,6 +126,8 @@ impl TransactionResponse{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
         //Select Transaction
         let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
+            //Ensure is pending
+            .check_pending()?
             //Complete Transaction
             .complete_transacion(&mut tx).await?;
         //Commit
@@ -155,6 +142,8 @@ impl TransactionResponse{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
         //Select Transaction
         let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
+            //Ensure Pending
+            .check_pending()?
             //Cancel Transaction
             .cancel_transacion(&mut tx).await?;
         //Commit
@@ -168,18 +157,93 @@ impl TransactionResponse{
 
 impl BankTransaction{
     async fn complete_transacion<'a>(&self,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
-        todo!()
+        //only recv is marked as pending, send is automatically accepted
+        match self.transaction_action{
+            BankAction::RECV => transfer_balance(&self.contact_id, &self.user_id, &self.transaction_amount, tx).await?,
+            _ => Err(BankError::InvalidAction)?,
+        };
+        self.finalize_transaction(BankStatus::CONFIRMED, tx).await
     }
     async fn cancel_transacion<'a>(&self,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
-        todo!()
+        self.finalize_transaction(BankStatus::DENIED, tx).await
     }
     async fn send_transacion<'a>(user_id: &str, contact_id: &str, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
-        todo!()
+        BankTransaction{
+            user_id: user_id.to_owned(),
+            contact_id: contact_id.to_owned(),
+            transaction_id: uuid::Uuid::new_v4().to_string(),
+            transaction_action: BankAction::SEND,
+            transaction_amount: amount.to_owned(),
+            request_timestamp: None,
+            processed_timestamp: None,
+            status: BankStatus::CONFIRMED,
+        }.create_transaction(tx).await
     }
     async fn recv_transacion<'a>(user_id: &str, contact_id: &str, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
-        todo!()
+        BankTransaction{
+            user_id: user_id.to_owned(),
+            contact_id: contact_id.to_owned(),
+            transaction_id: uuid::Uuid::new_v4().to_string(),
+            transaction_action: BankAction::RECV,
+            transaction_amount: amount.to_owned(),
+            request_timestamp: None,
+            processed_timestamp: None,
+            status: BankStatus::PENDING,
+        }.create_transaction(tx).await
     }
 
+    //Finalizes the transaction (CONFIRM/DENY)
+    async fn finalize_transaction<'a>(&self, status: BankStatus,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
+        match status {
+            BankStatus::PENDING => Err(BankError::InvalidAction),
+
+            _ => Ok(query_as::<_, Self>(r#"
+                UPDATE transactions
+                SET
+                    status = $1,
+                    processed_timestamp = now()
+                WHERE transaction_id = $2
+                RETURNING *;
+            "#).bind(status).bind(&self.transaction_id).fetch_one(tx.as_mut()).await?)
+        }
+        
+    }
+
+    //Create a transaction (ignores timestamps)
+    async fn create_transaction<'a>(&self, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
+        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(r#"
+            INSERT INTO bank_transactions (user_id, contact_id, transaction_id, transaction_action, transaction_amount, request_timestamp, processed_timestamp, status)
+            VALUES ( 
+        "#);
+
+        qb.push_bind(&self.user_id).push(", ")
+        .push_bind(&self.contact_id).push(", ")
+        .push_bind(&self.transaction_id).push(", ")
+        .push_bind(&self.transaction_action).push(", ")
+        .push_bind(&self.transaction_amount).push(", ")
+        .push("NOW(), ");
+
+        match self.transaction_action {
+            BankAction::SEND => qb.push("NOW(), "),
+            BankAction::RECV => qb.push("NULL, "),
+            _ => Err(BankError::InvalidAction)?
+        };
+
+        qb.push_bind(self.status)
+        .push(r#" )
+            ON CONFLICT (transaction_id) DO NOTHING
+            RETURNING transaction_id
+        "#);
+        qb.build_query_as().fetch_optional(tx.as_mut()).await?.ok_or(BankError::TransactionCreateFailed)
+    }
+
+    //Check if transaction is pending
+    fn check_pending(&self) -> Result<&Self, BankError>{
+        match self.status{
+            super::transaction::BankStatus::PENDING => Ok(self),
+            _ => Err(BankError::NotPending)
+        }
+    }
 
     //Selects Transaction for update (locking it from edits not associated with sql transaction)
     async fn select_for_update<'a>(user_id: &str, transaction_id: &str,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
