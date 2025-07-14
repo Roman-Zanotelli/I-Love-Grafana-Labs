@@ -27,7 +27,8 @@ Because this is a demo project all content will be within this single repo, norm
 
 There will also be many missing features absent that would otherwise be best practice for production (Service-to-Service TLS, Persistent Storage, Secret Management/Rotation, CI/CD, etc); I do plan to update this demo in the future with said additions but for now the focus is again on the Grafana Stack.
 
-This project is planned to be completed in ~5 days (2 planning, 3 for implementation), this is meant to challenge myself to prove what Im capable of from (relative) scratch under limited time.
+This project was planned to be completed in ~5 days (Jul 10) 2 planning, 3 for implementation, this is meant to challenge myself to prove what Im capable of from (relative) scratch under limited time. 
+> **EDIT:** Ive given myself an extension on the project by 2 days for a total of ~7, quality over speed, also I got my wisdom teeth removed :^}
 
 ## 🧠 Key Goals
 
