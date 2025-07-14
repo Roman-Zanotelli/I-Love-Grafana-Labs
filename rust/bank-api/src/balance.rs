@@ -77,9 +77,9 @@ pub(super) async fn change_balance<'a>(user_id: &str, amount: &i32,  tx: &mut sq
             UPDATE balances
             SET
                 balance = balance + $1,
-                daily_send_used = daily_send_used + $1,
-            WHERE account_id = $2
-            "#).bind(amount).bind(user_id).execute(tx.as_mut()).await?;
+                daily_send_used = daily_send_used + $2,
+            WHERE account_id = $3
+            "#).bind(amount).bind(amount.abs()).bind(user_id).execute(tx.as_mut()).await?;
         },
         0.. => {
             query::<Postgres>(r#"

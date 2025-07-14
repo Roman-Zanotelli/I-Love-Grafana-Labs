@@ -15,4 +15,5 @@ thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
 
-jwt-util = {path = "../jwt-util", features = ["decode"]}
+
+jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/jwt-util", branch = "main", features = ["decode"] }

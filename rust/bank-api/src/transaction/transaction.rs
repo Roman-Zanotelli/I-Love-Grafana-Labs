@@ -31,8 +31,8 @@ pub struct BankTransaction{
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum BankAction {
-    CONFIRM, //POST Only
-    DENY, //POST Only
+    CONFIRM,
+    DENY,
     SEND,
     RECV
 }
