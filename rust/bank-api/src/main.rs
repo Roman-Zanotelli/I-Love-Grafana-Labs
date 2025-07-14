@@ -1,7 +1,6 @@
 mod balance;
 mod contact;
 mod transaction;
-mod filter;
 
 use std::time::Duration;
 
@@ -12,7 +11,7 @@ use jwt_util::decode::decode_claims;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 
-use crate::{balance::BalanceResponse, contact::contact::ContactResponse, filter::{ContactFilter, TransactionFilter}, transaction::transaction::TransactionResponse};
+use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, transaction::transaction::{TransactionFilter, TransactionResponse}};
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{

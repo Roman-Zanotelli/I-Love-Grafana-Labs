@@ -2,9 +2,8 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres, QueryBuilder};
 
-use crate::{ filter::TransactionFilter, transaction::{action::TAction, status::TStatus}, Queriable};
+use crate::{ transaction::{action::TAction, status::TStatus}};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -25,4 +24,15 @@ pub struct Transaction{
     status: TStatus //Current Status
 }
 
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub struct TransactionFilter{
+    pub transaction_id: Option<String>, //filter by transaction id
+    pub contact_id: Option<String>, //filter by contact id
+    pub status: Option<TStatus>, // filter by pending status
+    pub action: Option<TAction>, //action to preform (POST)
+    pub less_than: Option<i32>, //less than amount
+    pub more_than: Option<i32> //more than amount
+}
 

@@ -1,7 +1,5 @@
-use serde::Serialize;
-use sqlx::{Pool, Postgres, QueryBuilder};
+use serde::{Deserialize, Serialize};
 
-use crate::{ filter::ContactFilter, Queriable};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -18,6 +16,24 @@ pub struct Contact{
     is_fav: Option<bool> //True if favorite, False if just saved, None if not saved
 }
 
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub struct ContactFilter{
+    pub contact_name: Option<String>, //filter by name of contact
+    pub contact_id: Option<String>, //filter by id of contact
+    pub is_fav: Option<bool>, //filter by favorite
+    pub contact_action: Option<CAction> //action to perform
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum CAction {
+    ADD,
+    REMOVE,
+    FAV,
+    UN_FAV,
+}
 
 
 

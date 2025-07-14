@@ -1,6 +1,7 @@
 use sqlx::{Pool, Postgres, QueryBuilder};
 
-use crate::{contact::{contact::ContactResponse, post::*}, filter::ContactFilter, Queriable};
+use crate::{contact::{contact::{CAction, ContactFilter, ContactResponse}, post::*}, Queriable};
+
 
 impl Default for ContactResponse {
     fn default() -> Self {
@@ -12,10 +13,10 @@ impl Queriable<ContactFilter> for ContactResponse{
     async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &ContactFilter) -> Result<Self, sqlx::Error> where Self: Sized {
         if let (Some(action), Some(contact_id), user_id) = (&params.contact_action, &params.contact_id, &claims.id){
             match action {
-                crate::filter::CAction::ADD => add(contact_id, user_id, pool).await,
-                crate::filter::CAction::REMOVE => remove(contact_id, user_id, pool).await,
-                crate::filter::CAction::FAV => fav(contact_id, user_id, pool).await,
-                crate::filter::CAction::UN_FAV => un_fav(contact_id, user_id, pool).await,
+                CAction::ADD => add(contact_id, user_id, pool).await,
+                CAction::REMOVE => remove(contact_id, user_id, pool).await,
+                CAction::FAV => fav(contact_id, user_id, pool).await,
+                CAction::UN_FAV => un_fav(contact_id, user_id, pool).await,
             }
         }else{
             Ok(ContactResponse::default())

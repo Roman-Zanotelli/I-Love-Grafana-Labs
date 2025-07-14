@@ -1,6 +1,6 @@
 use sqlx::{Pool, Postgres, QueryBuilder};
 
-use crate::{filter::TransactionFilter, transaction::{action::TAction, post::*, transaction::TransactionResponse}, Queriable};
+use crate::{transaction::{action::TAction, post::*, transaction::{TransactionFilter, TransactionResponse}}, Queriable};
 
 impl Default for TransactionResponse{
     fn default() -> Self {
