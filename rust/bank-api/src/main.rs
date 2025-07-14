@@ -100,18 +100,16 @@ async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Beare
 pub trait Queriable<Filter> where  Filter: DeserializeOwned{
 
     //Impl
-    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows;
+    async fn post_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized;
     fn generate_get_query<'a>(claims: &'a jwt_util::core::JwtClaims, params: &'a Filter) -> QueryBuilder<'a, Postgres>;
     
 
     //Default
     //GET is just a SELECT statement
-    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized + ParsableRows{
-        Ok(Self::parse_rows(&Self::generate_get_query(&claims, &params).build().fetch_all(pool).await?))
-    }
+    async fn get_query(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> Result<Self, sqlx::Error> where Self: Sized;
 
     //Convert GET Query into Http Response
-    async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+    async fn get_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + Serialize {
         match Self::get_query(pool, &claims, &params).await{
             Ok(resp) => match serde_json::to_string(&resp) {
                 Ok(json_resp) => (StatusCode::FOUND, json_resp),
@@ -122,7 +120,7 @@ pub trait Queriable<Filter> where  Filter: DeserializeOwned{
     }
 
     //Convert POST Query into Http Response
-    async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized + ParsableRows + Serialize{
+    async fn post_http_response(pool: &Pool<Postgres>, claims: &jwt_util::core::JwtClaims, params: &Filter) -> (StatusCode, String) where Self: Sized  + Serialize{
         match Self::post_query(pool, claims, params).await{
             Ok(resp) => match serde_json::to_string(&resp) {
                 Ok(json_resp) => (StatusCode::OK, json_resp),
@@ -134,13 +132,6 @@ pub trait Queriable<Filter> where  Filter: DeserializeOwned{
 
 }
 
-pub trait ParsableRow{
-    fn parse_row(row: &sqlx::postgres::PgRow) -> Self;
-}
-
-pub trait ParsableRows{
-    fn parse_rows(rows: &Vec<sqlx::postgres::PgRow>) -> Self;
-}
 
 //====================================================
 //?                 END OF Traits
