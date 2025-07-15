@@ -2,6 +2,7 @@
 members = [
     "rust/auth-api",
     "rust/bank-api",
+    "rust/bank-spa",
     "rust/jwt-util",
     "rust/jwt-proxy-auth",
 ]

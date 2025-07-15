@@ -1,0 +1,115 @@
+static_resources:
+  listeners:
+  - name: listener_https
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 443
+    filter_chains:
+    - transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain:
+                filename: "/etc/envoy/tls/tls.crt"
+              private_key:
+                filename: "/etc/envoy/tls/tls.key"
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: backend
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/sign_in" }
+                route: { cluster: auth-api }
+              - match: { prefix: "/sign_up" }
+                route: { cluster: auth-api }
+              - match: { prefix: "/balance" }
+                route: { cluster: bank-api }
+              - match: { prefix: "/transaction" }
+                route: { cluster: bank-api }
+              - match: { prefix: "/contact" }
+                route: { cluster: bank-api }
+              - match: { prefix: "/grafana"}
+                route: 
+                  cluster: grafana
+                  prefix_rewrite: ""
+              - match: { prefix: "/" }
+                route: { cluster: bank-spa }
+          upgrade_configs:
+            - upgrade_type: websocket
+          http_filters:
+          - name: envoy.filters.http.lua
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              inline_code: |
+                function envoy_on_request(request_handle)
+                  request_handle:headers():replace("X-Forwarded-Proto", "https")
+                  local host = request_handle:headers():get(":authority")
+                  if host ~= nil then
+                    request_handle:headers():replace("X-Forwarded-Host", host)
+                  end
+                end
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+  - name: auth-api
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: auth-api
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: auth-api-service.default.svc.cluster.local
+                port_value: 80
+  - name: bank-api
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: bank-api
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: bank-api-service.default.svc.cluster.local
+                port_value: 80
+  - name: bank-spa
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: spa-service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: bank-spa-service.default.svc.cluster.local
+                port_value: 80
+  - name: grafana
+    connect_timeout: 1s
+    type: strict_dns
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: grafana
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: grafana.default.svc.cluster.local
+                port_value: 80

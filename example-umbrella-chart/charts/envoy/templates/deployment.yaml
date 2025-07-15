@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: envoy
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: envoy
+  template:
+    metadata:
+      labels:
+        app: envoy
+    spec:
+      containers:
+      - name: envoy
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        args:
+          - "-c"
+          - "/etc/envoy/envoy.yaml"
+          - "--log-level"
+          - "info"
+        volumeMounts:
+          - name: envoy-config
+            mountPath: /etc/envoy
+            readOnly: true
+          - name: tls-secret
+            mountPath: /etc/envoy/tls
+            readOnly: true
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: envoy-config
+        - name: tls-secret
+          secret:
+            secretName: envoy-tls

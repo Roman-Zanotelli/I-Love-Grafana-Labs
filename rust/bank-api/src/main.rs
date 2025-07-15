@@ -23,7 +23,6 @@ async fn main() -> AnyResult<()>{
             .route("/balance", get(balance_handler)) //Get Balance Route
             .route("/transaction", get(get_transaction_handler)) //Get Transactions Route
             .route("/transaction", post(post_transaction_handler)) //Post Transactions Route
-            .route("/transaction/pending", post(post_transaction_handler)) //Post Transactions Route
             .route("/contact", get(get_contact_handler)) //Get Contact Route
             .route("/contact", post(post_contact_handler)) //Post Contact Route
             .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool

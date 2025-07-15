@@ -1,0 +1,6 @@
+image:
+  repository: envoyproxy/envoy
+  tag: v1.26-latest
+
+replicaCount: 1
+
