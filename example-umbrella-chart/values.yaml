@@ -67,3 +67,6 @@ core:
       limits:
         cpu: 500m
         memory: 256Mi
+observability:
+  loki:
+    enabled: true

@@ -1,0 +1,16 @@
+enabled: true
+image:
+  repository: grafana/loki
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3100
+
+persistence:
+  enabled: false
+
+
+auth_enabled: false
+retention_period: 168h

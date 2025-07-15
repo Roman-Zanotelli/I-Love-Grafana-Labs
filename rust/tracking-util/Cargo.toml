@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 tracing = "0.1"
+tracing-loki = "0.2"
 tracing-subscriber = {version = "0.3", features = ["env-filter", "fmt", "json"]}
 
 opentelemetry = "0.30" 
@@ -19,3 +20,5 @@ metrics = "0.24"
 metrics-exporter-prometheus = "0.17"
 
 anyhow = "1"
+
+url = "2"

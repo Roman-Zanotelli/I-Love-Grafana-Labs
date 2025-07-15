@@ -13,8 +13,9 @@ use opentelemetry::KeyValue;
 use opentelemetry::trace::TracerProvider;
 
 pub struct TrackingGuard {
-    pub _pyro: Option<pyroscope::PyroscopeAgent<PyroscopeAgentReady>>,
-    pub _otel: Option<opentelemetry_sdk::trace::Tracer>,
+    pub _pyro: pyroscope::PyroscopeAgent<PyroscopeAgentReady>,
+    pub _otel: opentelemetry_sdk::trace::Tracer,
+    _loki_task: tracing_loki::BackgroundTask,
     pub prometheus_handle: PrometheusHandle
 }
 
@@ -29,14 +30,14 @@ impl TrackingGuard {
 
         // Pyroscope setup
 
-        let pyro_agent = Some(
+        let _pyro = 
             PyroscopeAgent::builder(
                 &env::var("PYRO_ENDPOINT").unwrap_or_else(|_| "http://pyroscope:4040".into()),
                 &app_name,
             )
             .backend(pprof_backend(PprofConfig::new().sample_rate(100)))
-            .build()?,
-        );
+            .build()?;
+        
 
         // Tempo (OTLP) tracing
         let tempo_endpoint =
@@ -50,20 +51,24 @@ impl TrackingGuard {
         
         let tracer_name = env::var("TRACER_NAME").unwrap_or_else(|_| "default_tracer".into());
 
-        let otel_tracer = provider.tracer(tracer_name);
+        let _otel = provider.tracer(tracer_name);
 
+        let loki_endpoint = env::var("LOKI_ENDPOINT").unwrap_or_else(|_| "http://loki:3100".to_string());
+        let (loki_layer, _loki_task) = tracing_loki::builder().label("service", app_name)?.build_url(url::Url::parse(&loki_endpoint)?)?;
         // Tracing subscriber
         tracing_subscriber::registry()
             .with(tracing_subscriber::fmt::layer().json())
             .with(tracing_subscriber::EnvFilter::from_default_env())
-            .with(tracing_opentelemetry::layer().with_tracer(otel_tracer.clone()))
+            .with(tracing_opentelemetry::layer().with_tracer(_otel.clone()))
+            .with(loki_layer) 
             .init();
 
 
         Ok(Self {
-            _pyro: pyro_agent,
-            _otel: Some(otel_tracer),
+            _pyro,
+            _otel,
             prometheus_handle,
+            _loki_task,
         })
     }
 }
