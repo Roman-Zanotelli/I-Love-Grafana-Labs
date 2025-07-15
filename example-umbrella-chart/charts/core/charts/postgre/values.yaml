@@ -1,22 +1,23 @@
 image:
-  repository: postgres
-  tag: "16.3"
-  pullPolicy: IfNotPresent
+  repository:
+  tag:
+  pullPolicy:
+  pullSecrets:
 instances:
-  - name: auth-db
-    port: 5432
-    storage: 1Gi
-    password: "super-secure-root-password"
-    initScriptFolder: "init-scripts-auth"
-  - name: bank-db
-    port: 5432
-    storage: 1Gi
-    password: "super-secure-root-password"
-    initScriptFolder: "init-scripts-bank"
+  - name:
+    port:
+    storage:
+    password:
+    initScriptFolder:
+  - name:
+    port:
+    storage:
+    password:
+    initScriptFolder:
 resources:
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu:
+    memory:
   limits:
-    cpu: 500m
-    memory: 256Mi
+    cpu:
+    memory:

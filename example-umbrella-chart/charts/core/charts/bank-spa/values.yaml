@@ -1,17 +1,10 @@
-name: bank-spa
+name:
 image:
-  repository: romanzanotelli/bank-spa
-  tag: latest
-  pullPolicy: IfNotPresent
-replicaCount: 1
-containerPort: 80
+  repository:
+  tag:
+  pullPolicy:
+  pullSecrets:
+replicaCount:
+containerPort:
 env:
-  csp: |
-    default-src 'self';
-    connect-src 'self' https://localhost;
-    script-src 'self';
-    script-src-attr 'self' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
-    style-src-elem 'self' 'unsafe-inline';
-    font-src 'self';
-    img-src 'self' data:;
+  csp:

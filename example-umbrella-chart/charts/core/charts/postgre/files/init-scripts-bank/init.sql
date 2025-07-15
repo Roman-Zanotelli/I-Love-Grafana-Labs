@@ -1,3 +1,3 @@
 CREATE DATABASE bank_db;
 CREATE USER api_user WITH ENCRYPTED PASSWORD 'super-secure-password';
-GRANT ALL PRIVILEGES ON DATABASE ledger_db TO api_user;
+GRANT ALL PRIVILEGES ON DATABASE bank_db TO api_user;

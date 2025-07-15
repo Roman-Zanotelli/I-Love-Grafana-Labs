@@ -12,6 +12,12 @@ spec:
       labels:
         app: envoy
     spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
       containers:
       - name: envoy
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

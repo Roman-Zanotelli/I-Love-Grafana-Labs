@@ -1,4 +1,5 @@
 core:
+
   auth-api:
     name: auth-api
     containerPort: 80
@@ -7,11 +8,18 @@ core:
       repository: romanzanotelli/auth-api
       tag: "latest"
       pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
     env:
       database_url: "postgres://api_user:super-secure-password@auth-db:5432/auth_db"
       jwt_duration: "3600"
       jwt_secret: "something-super-duper-extra-secret!!!"
       jwt_iss: "auth-api"
+    postgres:
+      host: auth-db
+      port: 5432
+      waitTimeoutSeconds: 30
+      waitSleepSeconds: 5
 
   bank-api:
     name: bank-api
@@ -21,9 +29,16 @@ core:
       repository: romanzanotelli/bank-api
       tag: "latest"
       pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
     env:
       database_url: "postgres://api_user:super-secure-password@bank-db:5432/bank_db"
       jwt_secret: "something-super-duper-extra-secret!!!"
+    postgres:
+      host: bank-db
+      port: 5432
+      waitTimeoutSeconds: 30
+      waitSleepSeconds: 5
   
   bank-spa:
     name: bank-spa
@@ -31,6 +46,8 @@ core:
       repository: romanzanotelli/bank-spa
       tag: latest
       pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
     replicaCount: 1
     containerPort: 80
     env:
@@ -49,6 +66,8 @@ core:
       repository: postgres
       tag: "16.3"
       pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
     instances:
       - name: auth-db
         port: 5432
@@ -59,7 +78,7 @@ core:
         port: 5432
         storage: 1Gi
         password: "super-secure-root-password"
-        initScriptFolder: "init-scripts-ledger"
+        initScriptFolder: "init-scripts-bank"
     resources:
       requests:
         cpu: 100m
@@ -67,6 +86,53 @@ core:
       limits:
         cpu: 500m
         memory: 256Mi
+
 observability:
+
+  grafana:
+    replicaCount: 1
+    image:
+      repository: grafana/grafana
+      tag: 9.5.2
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    service:
+      type: ClusterIP
+      port: 80
+    rootUrl: "https://localhost"
+    serveFromSubPath: true
+
+  prometheus:
+    image:
+      repository: prom/prometheus
+      tag: latest
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    replicaCount: 1
+
   loki:
     enabled: true
+    image:
+      repository: grafana/loki
+      tag: latest
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    service:
+      type: ClusterIP
+      port: 3100
+    persistence:
+      enabled: false
+    auth_enabled: false
+    retention_period: 168h
+    replicaCount: 1
+
+envoy:
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.26-latest
+    pullSecrets:
+        - docker-hub-secret
+  replicaCount: 1

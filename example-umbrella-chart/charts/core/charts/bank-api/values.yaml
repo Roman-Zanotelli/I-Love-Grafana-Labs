@@ -1,15 +1,15 @@
-name: bank-api
-containerPort: 80
-replicaCount: 1
+name: 
+containerPort: 
+replicaCount: 
 image:
-  repository: romanzanotelli/bank-api
-  tag: "latest"
-  pullPolicy: IfNotPresent
+  repository:
+  tag:
+  pullPolicy:
 env:
-  database_url: "postgres://api_user:super-secure-password@ledger-db:5432/bank_db"
-  jwt_secret: "something-super-duper-extra-secret!!!"
+  database_url:
+  jwt_secret:
 postgres:
-  host: bank-db
-  port: 5432
-  waitTimeoutSeconds: 30
-  waitSleepSeconds: 5
+  host:
+  port:
+  waitTimeoutSeconds:
+  waitSleepSeconds: 
