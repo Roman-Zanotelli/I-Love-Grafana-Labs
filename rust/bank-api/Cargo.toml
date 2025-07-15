@@ -21,3 +21,5 @@ jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git",
 metrics = "0.24"
 metrics-exporter-prometheus = "0.17"
 tower-http = { version = "0.6", features = ["trace"] }
+
+tracking-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/tracking-util", branch = "main"}

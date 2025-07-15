@@ -60,7 +60,6 @@ This project was planned to be completed in ~5 days (Jul 10) 2 planning, 3 for i
 ### Programming Language & Crates
 - [Rust](https://www.rust-lang.org/)
 - [Jsonwebtoken (JWT)](https://docs.rs/jsonwebtoken/latest/jsonwebtoken/index.html)
-- [Tonic (gRPC)](https://docs.rs/tonic/latest/tonic/)
 - [Axum (REST-API/Web)](https://docs.rs/axum/latest/axum/)
 - [Sqlx (SQL)](https://docs.rs/sqlx/latest/sqlx/)
 ---
@@ -108,7 +107,6 @@ Microservices:
 - User Auth API
 - Bank API
 - Envoy
-- Envoy JWT Authentication Service (using [Ext_Authz](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto) [gRPC])
 - Postgre (could be replaced with another solution)
 - Grafana Dashboard
 - Prometheus
@@ -158,10 +156,27 @@ Grafana Beyla will probably simplify Postgre Observability Set Up
 
 > Todo: More Detailed DB Explination
 
-## Todo Grafana
-While Grafana is the star of the show, it will be best to implement after all core buisness logic, then I will have all system interactions fully planned/flushed out (for the purposes of this demo); **Giving a holistic view of the project's entire Observability Needs**, helping me plan.
+## Grafana Dashboard
+Proxy aware routing (serve from path needs to match envoy routing)
+Envoy recieves it as https but is propgated back to the dashboard as http
+> Todo: Add default data source
+> Todo: Add default dashboards
+> Todo: Create fine-tuned/asthetic dashboards for demo
 
-As mentioned before I will likely be skipping longterm storage this demo, including Observability; In production is a different story, I may work on a future iteration showing how this demo can be expanded to handle its general and Observability storage needs.
+## Prometheus
+Custom Prometheus Chart
+Using metrics, metrics-exporter-prometheus, and tower-http crate for metrucs auto-instrumentation with axum
+Scapping envoy metrics on dedicated service
+> Todo: Add postgres_exporter sidecar to export postgre metrics
+
+## Loki
+> Todo
+
+## Tempo
+> Todo
+
+## Pyroscope
+> Todo
 
 # 🤖 AI Assistance Acknowledgment
 

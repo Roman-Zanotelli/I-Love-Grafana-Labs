@@ -15,5 +15,12 @@ tower-http = { version = "0.6", default-features = false, features = [
 anyhow = "1"
 
 
+
+
 metrics = "0.24"
 metrics-exporter-prometheus = "0.17"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+
+tracking-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/tracking-util", branch = "main"}

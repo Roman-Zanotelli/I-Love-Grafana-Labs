@@ -4,5 +4,6 @@ members = [
     "rust/bank-api",
     "rust/bank-spa",
     "rust/jwt-util",
-    "rust/jwt-proxy-auth",
+    "rust/tracking-util",
 ]
+resolver = "3"
