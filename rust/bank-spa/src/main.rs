@@ -1,22 +1,28 @@
 use axum::{
     http::{header, HeaderValue},
-    routing::get_service,
+    routing::{get, get_service},
     Router,
 };
+use metrics_exporter_prometheus::PrometheusBuilder;
 use std::{
     net::SocketAddr,
     env,
 };
 use tower_http::{
-    services::{ServeDir, ServeFile},
-    set_header::SetResponseHeaderLayer,
-    compression::CompressionLayer,
+    compression::CompressionLayer, services::{ServeDir, ServeFile}, set_header::SetResponseHeaderLayer, trace::TraceLayer
 
 };
+use anyhow::Result as AnyResult;
 
 #[tokio::main]
-async fn main() {
-serve(static_router(), get_port()).await;
+async fn main() -> AnyResult<()> {
+    let recorder_handle = PrometheusBuilder::new()
+        .install_recorder()?;
+     let metrics_handle = recorder_handle.clone();
+    Ok(serve(
+        static_router().route("/metrics", get(|| async move {Ok::<_, std::convert::Infallible>(metrics_handle.render())})),
+        get_port()
+    ).await)
 }
 
 
@@ -42,6 +48,7 @@ fn static_router() -> Router{
     Router::new().nest_service("/", serve_dir.clone()).fallback_service(serve_dir)
     .layer(CompressionLayer::new())
     .layer(SetResponseHeaderLayer::if_not_present(header::CONTENT_SECURITY_POLICY, csp))
+    .layer(TraceLayer::new_for_http()) //Tower trace layer for auto instrumentation
 
 }
 //Set up the port information

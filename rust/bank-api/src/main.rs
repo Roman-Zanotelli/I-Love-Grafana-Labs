@@ -9,8 +9,10 @@ use anyhow::Result as AnyResult;
 use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}, Json};
 use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
 use jwt_util::decode::decode_claims;
+use metrics_exporter_prometheus::PrometheusBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
+use tower_http::trace::TraceLayer;
 
 
 use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, error::BankError, transaction::transaction::{BankTransactionFilter, TransactionResponse}};
@@ -18,6 +20,11 @@ use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactR
 #[tokio::main]
 async fn main() -> AnyResult<()>{
     //TODO: observability
+    let recorder_handle = PrometheusBuilder::new()
+        .install_recorder()?;
+     let metrics_handle = recorder_handle.clone();
+
+
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/balance", get(balance_handler)) //Get Balance Route
@@ -25,7 +32,9 @@ async fn main() -> AnyResult<()>{
             .route("/transaction", post(post_transaction_handler)) //Post Transactions Route
             .route("/contact", get(get_contact_handler)) //Get Contact Route
             .route("/contact", post(post_contact_handler)) //Post Contact Route
+            .route("/metrics", get(|| async move {Ok::<_, std::convert::Infallible>(metrics_handle.render())})) //Metrics Route for prometheus
             .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool
+            .layer(TraceLayer::new_for_http()) //Tower trace layer for auto instrumentation
     ).await?)
 }
 

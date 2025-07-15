@@ -17,3 +17,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 
 
 jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/jwt-util", branch = "main", features = ["decode"] }
+
+metrics = "0.24"
+metrics-exporter-prometheus = "0.17"
+tower-http = { version = "0.6", features = ["trace"] }
