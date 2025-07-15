@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use sqlx::{query_as, Pool, Postgres, QueryBuilder, Transaction as SQLTransaction};
+use uuid::Uuid;
 
 use crate::{balance::{select_balance_for_update, transfer_balance}, error::BankError, transaction::transaction::{BankAction, BankStatus, BankTransaction, BankTransactionFilter, TransactionResponse}, Queriable};
 
@@ -95,7 +96,7 @@ impl TransactionResponse{
     }
 
     //Send transaction Resp
-    async fn send(user_id: &str, contact_id: &str, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    async fn send(user_id: &Uuid, contact_id: &Uuid, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
 
         //Transaction logic (No commit)
@@ -108,7 +109,7 @@ impl TransactionResponse{
     }
 
     //Recv Transaction Resp
-    async fn recv(user_id: &str, contact_id: &str, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    async fn recv(user_id: &Uuid, contact_id: &Uuid, amount: &i32, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
 
         //Transaction logic (No commit)
@@ -122,7 +123,7 @@ impl TransactionResponse{
 
 
     //Confirm Transaction Resp
-    async fn confirm(user_id: &str, transaction_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    async fn confirm(user_id: &Uuid, transaction_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
         //Select Transaction
         let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
@@ -138,7 +139,7 @@ impl TransactionResponse{
 
 
     //Deny Transaction Resp
-    async fn deny(user_id: &str, transaction_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    async fn deny(user_id: &Uuid, transaction_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         let mut tx: SQLTransaction<'static, Postgres> = pool.begin().await?;
         //Select Transaction
         let resp = BankTransaction::select_for_update(user_id, transaction_id, &mut tx).await?
@@ -167,11 +168,11 @@ impl BankTransaction{
     async fn cancel_transacion<'a>(&self,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
         self.finalize_transaction(BankStatus::DENIED, tx).await
     }
-    async fn send_transacion<'a>(user_id: &str, contact_id: &str, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
+    async fn send_transacion<'a>(user_id: &Uuid, contact_id: &Uuid, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
         BankTransaction{
             user_id: user_id.to_owned(),
             contact_id: contact_id.to_owned(),
-            transaction_id: uuid::Uuid::new_v4().to_string(),
+            transaction_id: uuid::Uuid::new_v4(),
             transaction_action: BankAction::SEND,
             transaction_amount: amount.to_owned(),
             request_timestamp: None,
@@ -179,11 +180,11 @@ impl BankTransaction{
             status: BankStatus::CONFIRMED,
         }.create_transaction(tx).await
     }
-    async fn recv_transacion<'a>(user_id: &str, contact_id: &str, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
+    async fn recv_transacion<'a>(user_id: &Uuid, contact_id: &Uuid, amount: &i32, tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
         BankTransaction{
             user_id: user_id.to_owned(),
             contact_id: contact_id.to_owned(),
-            transaction_id: uuid::Uuid::new_v4().to_string(),
+            transaction_id: uuid::Uuid::new_v4(),
             transaction_action: BankAction::RECV,
             transaction_amount: amount.to_owned(),
             request_timestamp: None,
@@ -246,7 +247,7 @@ impl BankTransaction{
     }
 
     //Selects Transaction for update (locking it from edits not associated with sql transaction)
-    async fn select_for_update<'a>(user_id: &str, transaction_id: &str,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
+    async fn select_for_update<'a>(user_id: &Uuid, transaction_id: &Uuid,  tx: &mut SQLTransaction<'a, Postgres>) -> Result<Self, BankError>{
     //Setup Query
     query_as::<_, Self>(
         r#"
