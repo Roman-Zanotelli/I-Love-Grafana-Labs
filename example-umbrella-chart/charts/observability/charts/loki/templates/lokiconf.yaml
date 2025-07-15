@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "loki.fullname" . }}-config
+  name: {{ include "loki.name" . }}-config
 data:
   loki.yaml: |
     auth_enabled: false
@@ -32,7 +32,7 @@ data:
           store: memberlist
     memberlist:
       join_members:
-        - {{ printf "%s-0.%s.%s.svc.cluster.local:7946" (include "loki.fullname" .) (include "loki.fullname" .) .Release.Namespace }}
+        - {{ printf "%s-0.loki.%s.svc.cluster.local:7946" (include "loki.name" .) .Release.Namespace }}
     distributor:
       ring:
         kvstore:

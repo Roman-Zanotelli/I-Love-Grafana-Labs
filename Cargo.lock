@@ -1436,7 +1436,7 @@ dependencies = [
 [[package]]
 name = "jwt-util"
 version = "0.1.0"
-source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#d974687b1f667cea9def2f441da4fea6bf91fa03"
+source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#4a3512cd0e09f14f1477d167061110927d9feb3a"
 dependencies = [
  "chrono",
  "jsonwebtoken",
@@ -3566,7 +3566,7 @@ dependencies = [
 [[package]]
 name = "tracking-util"
 version = "0.1.0"
-source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#d974687b1f667cea9def2f441da4fea6bf91fa03"
+source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#4a3512cd0e09f14f1477d167061110927d9feb3a"
 dependencies = [
  "anyhow",
  "metrics",
@@ -3577,8 +3577,10 @@ dependencies = [
  "pyroscope",
  "pyroscope_pprofrs",
  "tracing",
+ "tracing-loki",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]

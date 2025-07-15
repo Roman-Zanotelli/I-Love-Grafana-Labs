@@ -72,7 +72,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: auth-api-service.default.svc.cluster.local
+                address: auth-api.default.svc.cluster.local
                 port_value: 80
   - name: bank-api
     connect_timeout: 1s
@@ -85,7 +85,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: bank-api-service.default.svc.cluster.local
+                address: bank-api.default.svc.cluster.local
                 port_value: 80
   - name: bank-spa
     connect_timeout: 1s
@@ -98,7 +98,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: bank-spa-service.default.svc.cluster.local
+                address: bank-spa.default.svc.cluster.local
                 port_value: 80
   - name: grafana
     connect_timeout: 1s

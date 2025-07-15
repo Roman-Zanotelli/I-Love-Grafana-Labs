@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}-init
+  name: {{ include "postgres.name" (dict "name" .name) }}-init
 data:
   {{- $files := .initScriptFolder }}
   {{- range $path, $bytes := $.Files.Glob (printf "files/%s/*" $files) }}

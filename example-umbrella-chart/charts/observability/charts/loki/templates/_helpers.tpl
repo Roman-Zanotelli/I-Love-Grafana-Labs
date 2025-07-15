@@ -1,5 +1,5 @@
-{{- define "loki.fullname" -}}
-{{ .Release.Name }}-loki
+{{- define "loki.name" -}}
+loki
 {{- end }}
 
 {{- define "loki.labels" -}}

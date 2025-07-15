@@ -8,11 +8,11 @@ instances:
     storage: 1Gi
     password: "super-secure-root-password"
     initScriptFolder: "init-scripts-auth"
-  - name: ledger-db
+  - name: bank-db
     port: 5432
     storage: 1Gi
     password: "super-secure-root-password"
-    initScriptFolder: "init-scripts-ledger"
+    initScriptFolder: "init-scripts-bank"
 resources:
   requests:
     cpu: 100m

@@ -11,7 +11,7 @@ spec:
     metadata:
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/path: "/metrics"
         prometheus.io/port: "{{ .Values.containerPort }}"
       labels:
         app: {{ .Values.name }}-service

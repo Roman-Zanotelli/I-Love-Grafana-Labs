@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "loki.fullname" . }}
+  name: loki
   labels:
     app.kubernetes.io/name: loki
     app.kubernetes.io/instance: {{ .Release.Name }}

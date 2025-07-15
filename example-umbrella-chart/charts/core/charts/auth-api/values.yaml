@@ -6,12 +6,12 @@ image:
   tag: "latest"
   pullPolicy: IfNotPresent
 env:
-  database_url: "postgres://api_user:super-secure-password@demo-auth-db:5432/auth_db"
+  database_url: "postgres://api_user:super-secure-password@auth-db:5432/auth_db"
   jwt_duration: "3600"
   jwt_secret: "something-super-duper-extra-secret!!!"
   jwt_iss: "auth-api"
 postgres:
-  host: demo-auth-db
+  host: auth-db
   port: 5432
   waitTimeoutSeconds: 30
   waitSleepSeconds: 5

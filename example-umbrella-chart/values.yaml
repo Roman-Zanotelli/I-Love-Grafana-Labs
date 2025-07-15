@@ -8,7 +8,7 @@ core:
       tag: "latest"
       pullPolicy: IfNotPresent
     env:
-      database_url: "postgres://api_user:super-secure-password@demo-auth-db:5432/auth_db"
+      database_url: "postgres://api_user:super-secure-password@auth-db:5432/auth_db"
       jwt_duration: "3600"
       jwt_secret: "something-super-duper-extra-secret!!!"
       jwt_iss: "auth-api"
@@ -22,7 +22,7 @@ core:
       tag: "latest"
       pullPolicy: IfNotPresent
     env:
-      database_url: "postgres://api_user:super-secure-password@demo-ledger-db:5432/ledger_db"
+      database_url: "postgres://api_user:super-secure-password@bank-db:5432/bank_db"
       jwt_secret: "something-super-duper-extra-secret!!!"
   
   bank-spa:
@@ -55,7 +55,7 @@ core:
         storage: 1Gi
         password: "super-secure-root-password"
         initScriptFolder: "init-scripts-auth"
-      - name: ledger-db
+      - name: bank-db
         port: 5432
         storage: 1Gi
         password: "super-secure-root-password"
