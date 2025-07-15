@@ -949,12 +949,13 @@ dependencies = [
 [[package]]
 name = "jwt-util"
 version = "0.1.0"
-source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#a12e3058b613c763a45c1c9a13fe71f8e605aa39"
+source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#4b75b008f77836ba594775b44db6c752214b4336"
 dependencies = [
  "chrono",
  "jsonwebtoken",
  "serde",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]

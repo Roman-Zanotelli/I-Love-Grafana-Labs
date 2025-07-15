@@ -60,7 +60,7 @@ impl ContactResponse{
             "#;
         Self::internal_query(contact_id, user_id, pool, QUERY).await
     }
-    pub(super) async fn remove(contact_id: &str, user_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    pub(super) async fn remove(contact_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         const QUERY: &str = r#"
                 DELETE FROM contacts
                 WHERE user_id = $1 AND contact_id = $2
@@ -68,7 +68,7 @@ impl ContactResponse{
             "#;
         Self::internal_query(contact_id, user_id, pool, QUERY).await
     }
-    pub(super) async fn fav(contact_id: &str, user_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    pub(super) async fn fav(contact_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         const QUERY: &str = r#"
                 INSERT INTO contacts (user_id, contact_id, is_fav)
                 VALUES ($1, $2, TRUE)
@@ -80,7 +80,7 @@ impl ContactResponse{
         Self::internal_query(contact_id, user_id, pool, QUERY).await
         
     }
-    pub(super) async fn un_fav(contact_id: &str, user_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    pub(super) async fn un_fav(contact_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         const QUERY: &str = r#"
                 UPDATE contacts
                 SET is_fav = FALSE
@@ -90,7 +90,7 @@ impl ContactResponse{
         Self::internal_query(contact_id, user_id, pool, QUERY).await
     }
 
-    async fn internal_query(contact_id: &str, user_id: &str, pool: &Pool<Postgres>, query: &str)-> Result<Self, BankError>{
+    async fn internal_query(contact_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>, query: &str)-> Result<Self, BankError>{
         Ok(ContactResponse{
             contacts: query_as::<_, Contact>(query).bind(user_id).bind(contact_id).fetch_all(pool).await?
         })

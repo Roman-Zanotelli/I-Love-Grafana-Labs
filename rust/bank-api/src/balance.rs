@@ -20,7 +20,7 @@ pub struct BalanceResponse{
 }
 
 impl BalanceResponse{
-    async fn query<'e, E>(exec: E, id: &str) -> Result<Self, BankError> where E: Executor<'e, Database = Postgres>,{
+    async fn query<'e, E>(exec: E, id: &Uuid) -> Result<Self, BankError> where E: Executor<'e, Database = Postgres>,{
         Ok(sqlx::query_as("SELECT * FROM balances WHERE user_id = $1").bind(id).fetch_one(exec).await?)
     }
 
