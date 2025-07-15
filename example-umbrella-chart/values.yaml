@@ -1,6 +1,6 @@
-core:
+core: #Core microservices
 
-  auth-api:
+  auth-api: #Auth-API configuration
     name: auth-api
     containerPort: 80
     replicaCount: 1
@@ -21,7 +21,8 @@ core:
       waitTimeoutSeconds: 30
       waitSleepSeconds: 5
 
-  bank-api:
+
+  bank-api:  #Bank-API configuration
     name: bank-api
     containerPort: 80
     replicaCount: 1
@@ -39,8 +40,9 @@ core:
       port: 5432
       waitTimeoutSeconds: 30
       waitSleepSeconds: 5
-  
-  bank-spa:
+
+
+  bank-spa:  #Auth-SPA configuration
     name: bank-spa
     image:
       repository: romanzanotelli/bank-spa
@@ -61,7 +63,8 @@ core:
         font-src 'self';
         img-src 'self' data:;
 
-  postgre:
+
+  postgre:  #Postgre configurations
     image:
       repository: postgres
       tag: "16.3"
@@ -87,9 +90,9 @@ core:
         cpu: 500m
         memory: 256Mi
 
-observability:
+observability: #Observability mircoservices
 
-  grafana:
+  grafana: #Grafana Dashboard Configuration
     replicaCount: 1
     image:
       repository: grafana/grafana
@@ -103,7 +106,7 @@ observability:
     rootUrl: "https://localhost"
     serveFromSubPath: true
 
-  prometheus:
+  prometheus: #Pormetheus Configuration
     image:
       repository: prom/prometheus
       tag: latest
@@ -112,8 +115,7 @@ observability:
         - docker-hub-secret
     replicaCount: 1
 
-  loki:
-    enabled: true
+  loki: #Loki Configuration
     image:
       repository: grafana/loki
       tag: latest
@@ -129,7 +131,7 @@ observability:
     retention_period: 168h
     replicaCount: 1
 
-envoy:
+envoy: #Envoy Configuration
   image:
     repository: envoyproxy/envoy
     tag: v1.26-latest
