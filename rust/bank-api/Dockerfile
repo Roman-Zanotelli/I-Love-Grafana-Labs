@@ -11,11 +11,10 @@ RUN mkdir src && echo 'fn main(){}' > src/main.rs && \
 COPY ./src ./src
 RUN cargo build --release
 FROM gcr.io/distroless/cc-debian12
-USER 10001  #non-root user
 EXPOSE 80
+USER 10001
 
-# Copy binary from build stage
-COPY --from=build-env /app/target/release/bank-api /usr/local/bin/bank-api
+COPY --chown=10001:0 --from=build-env /app/target/release/bank-api /usr/local/bin/bank-api
 
 # Run it
 ENTRYPOINT ["/usr/local/bin/bank-api"]

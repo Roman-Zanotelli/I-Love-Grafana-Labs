@@ -16,6 +16,17 @@ spec:
       labels:
         app: {{ .Values.name }}-service
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z -v -w{{ .Values.postgres.waitTimeoutSeconds }} {{ .Values.postgres.host }} {{ .Values.postgres.port }}; do
+                echo "Waiting for database connection..."
+                sleep {{ .Values.postgres.waitSleepSeconds }}
+              done
       containers:
         - name: {{ .Values.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

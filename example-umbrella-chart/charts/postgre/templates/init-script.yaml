@@ -9,8 +9,7 @@ data:
   {{- $files := .initScriptFolder }}
   {{- range $path, $bytes := $.Files.Glob (printf "files/%s/*" $files) }}
   {{ base $path }}: |-
-{{ $bytes | indent 4 }}
+{{ $bytes | toString | indent 4 }}
   {{- end }}
-{{- end }}
 {{- end }}
 {{- end }}

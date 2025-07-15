@@ -6,5 +6,10 @@ image:
   tag: "latest"
   pullPolicy: IfNotPresent
 env:
-  db_url: "postgres://user:password@ledger-db:5432/ledger"
+  database_url: "postgres://api_user:super-secure-password@demo-ledger-db:5432/ledger_db"
   jwt_secret: "something-super-duper-extra-secret!!!"
+postgres:
+  host: demo-ledger-db
+  port: 5432
+  waitTimeoutSeconds: 30
+  waitSleepSeconds: 5

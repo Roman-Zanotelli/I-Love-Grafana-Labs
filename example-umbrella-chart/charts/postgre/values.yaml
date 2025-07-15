@@ -6,12 +6,12 @@ instances:
   - name: auth-db
     port: 5432
     storage: 1Gi
-    password: "super-secure-password"
+    password: "super-secure-root-password"
     initScriptFolder: "init-scripts-auth"
   - name: ledger-db
-    port: 5433
+    port: 5432
     storage: 1Gi
-    password: "super-secure-password"
+    password: "super-secure-root-password"
     initScriptFolder: "init-scripts-ledger"
 resources:
   requests:

@@ -7,7 +7,7 @@ auth-api:
     tag: "latest"
     pullPolicy: IfNotPresent
   env:
-    db_url: "postgres://auth_user:super-secure-password@auth-db:5432/auth"
+    database_url: "postgres://api_user:super-secure-password@demo-auth-db:5432/auth_db"
     jwt_duration: "3600"
     jwt_secret: "something-super-duper-extra-secret!!!"
     jwt_iss: "auth-api"
@@ -21,5 +21,29 @@ bank-api:
     tag: "latest"
     pullPolicy: IfNotPresent
   env:
-    db_url: "postgres://user:super-secure-password@ledger-db:5432/ledger"
+    database_url: "postgres://api_user:super-secure-password@demo-ledger-db:5432/ledger_db"
     jwt_secret: "something-super-duper-extra-secret!!!"
+
+postgre:
+  image:
+    repository: postgres
+    tag: "16.3"
+    pullPolicy: IfNotPresent
+  instances:
+    - name: auth-db
+      port: 5432
+      storage: 1Gi
+      password: "super-secure-password"
+      initScriptFolder: "init-scripts-auth"
+    - name: ledger-db
+      port: 5432
+      storage: 1Gi
+      password: "super-secure-password"
+      initScriptFolder: "init-scripts-ledger"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
