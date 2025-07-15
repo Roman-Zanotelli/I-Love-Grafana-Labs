@@ -138,6 +138,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tower-http",
+ "tracking-util 0.1.0 (git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main)",
  "uuid",
 ]
 
@@ -329,6 +330,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tower-http",
+ "tracking-util 0.1.0 (git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main)",
  "uuid",
 ]
 
@@ -344,6 +346,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "tracking-util 0.1.0 (git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main)",
 ]
 
 [[package]]
@@ -1381,7 +1384,7 @@ dependencies = [
 [[package]]
 name = "jwt-util"
 version = "0.1.0"
-source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#010d9a206ed20a1aeba74ca9fe2a07a424661d62"
+source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#34cf2a1bfeb5ddcf1a20e4758e564d10d051a3bd"
 dependencies = [
  "chrono",
  "jsonwebtoken",
@@ -1438,7 +1441,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07033963ba89ebaf1584d767badaa2e8fcec21aedea6b8c0346d487d49c28667"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -3363,8 +3366,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracking"
+name = "tracking-util"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "metrics",
+ "metrics-exporter-prometheus",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "pyroscope",
+ "pyroscope_pprofrs",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "tracking-util"
+version = "0.1.0"
+source = "git+https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git?branch=main#34cf2a1bfeb5ddcf1a20e4758e564d10d051a3bd"
 dependencies = [
  "anyhow",
  "metrics",

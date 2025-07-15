@@ -1,4 +1,5 @@
 use std::env;
+use metrics_exporter_prometheus::PrometheusHandle;
 use opentelemetry_otlp::{SpanExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::trace::{self};
 use pyroscope::pyroscope::PyroscopeAgentReady;
@@ -12,15 +13,16 @@ use opentelemetry::KeyValue;
 use opentelemetry::trace::TracerProvider;
 
 pub struct TrackingGuard {
-    _pyro: Option<pyroscope::PyroscopeAgent<PyroscopeAgentReady>>,
-    _otel: Option<opentelemetry_sdk::trace::Tracer>,
+    pub _pyro: Option<pyroscope::PyroscopeAgent<PyroscopeAgentReady>>,
+    pub _otel: Option<opentelemetry_sdk::trace::Tracer>,
+    pub _prom: Option<PrometheusHandle>
 }
 
 impl TrackingGuard {
     pub fn init_from_env() -> anyhow::Result<Self> {
         
          // Prometheus recorder
-        PrometheusBuilder::new().install_recorder()?;
+        let prometheis_handle = PrometheusBuilder::new().install_recorder()?;
 
         // App/service name
         let app_name = env::var("APP_NAME").unwrap_or_else(|_| "default-app-name".into());
@@ -61,6 +63,7 @@ impl TrackingGuard {
         Ok(Self {
             _pyro: pyro_agent,
             _otel: Some(otel_tracer),
+            _prom: Some(prometheis_handle),
         })
     }
 }
