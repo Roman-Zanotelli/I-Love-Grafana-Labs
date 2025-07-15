@@ -23,7 +23,7 @@ async fn main() -> AnyResult<()>{
         .install_recorder()?;
      let metrics_handle = recorder_handle.clone();
 
-    Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
+    Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:80").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/sign_in", post(sign_in)) //Create sign in route
             .route("/sign_up", post(sign_up)) //Create sign up route

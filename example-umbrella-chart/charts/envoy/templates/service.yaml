@@ -10,3 +10,18 @@ spec:
     - port: 443
       targetPort: 443
       protocol: TCP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy-admin
+spec:
+  type: ClusterIP
+  selector:
+    app: envoy
+  ports:
+    - protocol: TCP
+      port: 9901
+      targetPort: 9901

@@ -25,7 +25,7 @@ async fn main() -> AnyResult<()>{
      let metrics_handle = recorder_handle.clone();
 
 
-    Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
+    Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:80").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/balance", get(balance_handler)) //Get Balance Route
             .route("/transaction", get(get_transaction_handler)) //Get Transactions Route

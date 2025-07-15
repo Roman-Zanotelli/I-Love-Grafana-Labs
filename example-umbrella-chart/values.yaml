@@ -24,6 +24,25 @@ core:
     env:
       database_url: "postgres://api_user:super-secure-password@demo-ledger-db:5432/ledger_db"
       jwt_secret: "something-super-duper-extra-secret!!!"
+  
+  bank-spa:
+    name: bank-spa
+    image:
+      repository: romanzanotelli/bank-spa
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 1
+    containerPort: 80
+    env:
+      csp: |
+        default-src 'self';
+        connect-src 'self' https://localhost;
+        script-src 'self';
+        script-src-attr 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        style-src-elem 'self' 'unsafe-inline';
+        font-src 'self';
+        img-src 'self' data:;
 
   postgre:
     image:
