@@ -15,11 +15,13 @@ use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-
+#[tracing::instrument]
 #[tokio::main]
 async fn main() -> AnyResult<()>{
 
     let tracking_guard = tracking_util::TrackingGuard::init_from_env()?;
+    let metrics_handle = tracking_guard.prometheus_handle.clone();
+
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:80").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/sign_in", post(sign_in)) //Create sign in route
@@ -31,6 +33,7 @@ async fn main() -> AnyResult<()>{
 }
 
 //Init Postgre Pool
+#[tracing::instrument(skip(url))]
 async fn init_pool(url: &str) -> AnyResult<PgPool> {
     //Create Pool
     let pool = PgPoolOptions::new()
@@ -127,6 +130,7 @@ impl SignInRequest{
 }
 
 //Route Handler
+#[tracing::instrument(skip(pool, req))]
 async fn sign_in(State(pool): State<Pool<Postgres>>,Json(req): Json<SignInRequest>) -> impl IntoResponse{
     req.validate(pool).await
 }
@@ -192,6 +196,7 @@ impl Req for SignUpRequest{
 }
 
 //Route Handler
+#[tracing::instrument(skip(pool, req))]
 async fn sign_up(State(pool): State<Pool<Postgres>>, Json(req): Json<SignUpRequest>) -> impl IntoResponse{
     req.validate(pool).await
 }

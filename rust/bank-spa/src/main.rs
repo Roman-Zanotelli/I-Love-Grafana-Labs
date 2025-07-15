@@ -3,7 +3,6 @@ use axum::{
     routing::{get, get_service},
     Router,
 };
-use metrics_exporter_prometheus::PrometheusBuilder;
 use std::{
     net::SocketAddr,
     env,
@@ -14,11 +13,11 @@ use tower_http::{
 };
 use anyhow::Result as AnyResult;
 
+#[tracing::instrument]
 #[tokio::main]
 async fn main() -> AnyResult<()> {
-    let recorder_handle = PrometheusBuilder::new()
-        .install_recorder()?;
-     let metrics_handle = recorder_handle.clone();
+    let tracking_guard = tracking_util::TrackingGuard::init_from_env()?;
+    let metrics_handle = tracking_guard.prometheus_handle.clone();
     Ok(serve(
         static_router().route("/metrics", get(|| async move {Ok::<_, std::convert::Infallible>(metrics_handle.render())})),
         get_port()

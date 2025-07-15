@@ -17,12 +17,12 @@ use tower_http::trace::TraceLayer;
 
 use crate::{balance::BalanceResponse, contact::contact::{ContactFilter, ContactResponse}, error::BankError, transaction::transaction::{BankTransactionFilter, TransactionResponse}};
 
+#[tracing::instrument]
 #[tokio::main]
 async fn main() -> AnyResult<()>{
     //TODO: observability
-    let recorder_handle = PrometheusBuilder::new()
-        .install_recorder()?;
-     let metrics_handle = recorder_handle.clone();
+    let tracking_guard = tracking_util::TrackingGuard::init_from_env()?;
+    let metrics_handle = tracking_guard.prometheus_handle.clone();
 
 
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:80").await.unwrap(), //Set Up Listener
@@ -39,6 +39,7 @@ async fn main() -> AnyResult<()>{
 }
 
 //Init Postgre Pool
+#[tracing::instrument(skip(url))]
 async fn init_pool(url: &str) -> AnyResult<PgPool> {
     //Create Pool
     let pool = PgPoolOptions::new()
@@ -62,6 +63,7 @@ async fn init_pool(url: &str) -> AnyResult<PgPool> {
 //todo: write a decode_claims wrapper or something that consumes a closure to execute the logic without needing to rewrite all the match cases (could do 2 closurs response on OK and response on Err that handles error pattern matching once)
 
 //Balance
+#[tracing::instrument(skip(pool, auth))]
 async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => BalanceResponse::get_http_reponse(&pool, &claims).await, //Run Logic
@@ -70,6 +72,7 @@ async fn balance_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, 
 }
 
 //Transaction (GET)
+#[tracing::instrument(skip(pool, auth))]
 async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<BankTransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
@@ -78,6 +81,7 @@ async fn get_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Be
 }
 
 //Transaction (POST)
+#[tracing::instrument(skip(pool, auth))]
 async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<BankTransactionFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => TransactionResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
@@ -86,6 +90,7 @@ async fn post_transaction_handler(TypedHeader(auth): TypedHeader<Authorization<B
 }
 
 //Contact (GET)
+#[tracing::instrument(skip(pool, auth))]
 async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Query(params): Query<ContactFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => ContactResponse::get_http_response(&pool, &claims, &params).await, //Run Logic
@@ -94,6 +99,7 @@ async fn get_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer
 }
 
 //Contact (POST)
+#[tracing::instrument(skip(pool, auth))]
 async fn post_contact_handler(TypedHeader(auth): TypedHeader<Authorization<Bearer>>, State(pool): State<Pool<Postgres>>, Json(params): Json<ContactFilter>) -> impl IntoResponse{
     match decode_claims(auth.token()){
         Ok(claims) => ContactResponse::post_http_response(&pool, &claims, &params).await, //Run Logic
