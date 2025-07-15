@@ -1,0 +1,10 @@
+name: bank-api
+containerPort: 80
+replicaCount: 1
+image:
+  repository: romanzanotelli/bank-api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+env:
+  db_url: "postgres://user:password@ledger-db:5432/ledger"
+  jwt_secret: "something-super-duper-extra-secret!!!"

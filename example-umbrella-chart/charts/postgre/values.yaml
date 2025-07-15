@@ -1,0 +1,22 @@
+image:
+  repository: postgres
+  tag: "16.3"
+  pullPolicy: IfNotPresent
+instances:
+  - name: auth-db
+    port: 5432
+    storage: 1Gi
+    password: "super-secure-password"
+    initScriptFolder: "init-scripts-auth"
+  - name: ledger-db
+    port: 5433
+    storage: 1Gi
+    password: "super-secure-password"
+    initScriptFolder: "init-scripts-ledger"
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

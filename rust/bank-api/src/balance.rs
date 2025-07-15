@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use jwt_util::core::JwtClaims;
 use serde::Serialize;
 use sqlx::{query, query_as, Executor, Pool, Postgres};
+use uuid::Uuid;
 
 use crate::{error::BankError, transaction::transaction::BankAction};
 
@@ -43,7 +44,7 @@ impl BalanceResponse{
 }
 
 
-pub(super) async fn select_balance_for_update<'a>(user_id: &str,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<Option<BalanceResponse>, BankError>{
+pub(super) async fn select_balance_for_update<'a>(user_id: &Uuid,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<Option<BalanceResponse>, BankError>{
     Ok(query_as::<_, BalanceResponse>(r#"
         SELECT * FROM balances
         WHERE user_id = $1
@@ -51,18 +52,18 @@ pub(super) async fn select_balance_for_update<'a>(user_id: &str,  tx: &mut sqlx:
     "#).bind(user_id).fetch_optional(tx.as_mut()).await?)
 }
 
-pub(super) async fn transfer_balance<'a>(from: &str, to: &str, amount: &i32, tx:  &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
+pub(super) async fn transfer_balance<'a>(from: &Uuid, to: &Uuid, amount: &i32, tx:  &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
     //Lock User Balance
         select_balance_for_update(from, tx).await?
             //Throw err if none
-            .ok_or(BankError::NullBalance(from.to_owned()))?
+            .ok_or(BankError::NullBalance(from.to_string()))?
             //Throw err if cant send amount
             .can(&BankAction::SEND, amount)?;
 
         //Lock Contact Balance
         select_balance_for_update(to, tx).await?
             //Throw err if none
-            .ok_or(BankError::NullBalance(to.to_owned()))?
+            .ok_or(BankError::NullBalance(to.to_string()))?
             //Throw err if cant recv amount
             .can(&BankAction::RECV, amount)?;
         
@@ -70,7 +71,7 @@ pub(super) async fn transfer_balance<'a>(from: &str, to: &str, amount: &i32, tx:
     change_balance(to, &(amount.abs()), tx).await
 }
 
-pub(super) async fn change_balance<'a>(user_id: &str, amount: &i32,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
+pub(super) async fn change_balance<'a>(user_id: &Uuid, amount: &i32,  tx: &mut sqlx::Transaction<'a, Postgres>) -> Result<(), BankError>{
     match amount {
         ..0 => {
             query::<Postgres>(r#"

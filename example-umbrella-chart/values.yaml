@@ -1,0 +1,25 @@
+auth-api:
+  name: auth-api
+  containerPort: 80
+  replicaCount: 1
+  image:
+    repository: romanzanotelli/auth-api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  env:
+    db_url: "postgres://auth_user:super-secure-password@auth-db:5432/auth"
+    jwt_duration: "3600"
+    jwt_secret: "something-super-duper-extra-secret!!!"
+    jwt_iss: "auth-api"
+
+bank-api:
+  name: bank-api
+  containerPort: 80
+  replicaCount: 1
+  image:
+    repository: romanzanotelli/bank-api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  env:
+    db_url: "postgres://user:super-secure-password@ledger-db:5432/ledger"
+    jwt_secret: "something-super-duper-extra-secret!!!"

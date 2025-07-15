@@ -1,0 +1,67 @@
+{{- range .Values.instances }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+spec:
+  selector:
+    app: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+  ports:
+    - name: psql
+      port: {{ .port }}
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+spec:
+  serviceName: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "{{ .password }}"
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            {{- if .initScriptFolder }}
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+            {{- end }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}-pvc
+        {{- if .initScriptFolder }}
+        - name: init-sql
+          configMap:
+            name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}-init
+        {{- end }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}-pvc
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .storage }}
+{{- end }}

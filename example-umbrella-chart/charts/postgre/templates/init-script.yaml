@@ -1,0 +1,16 @@
+{{- range .Values.instances }}
+{{- if .initScriptFolder }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" (dict "Release" $.Release "name" .name) }}-init
+data:
+  {{- $files := .initScriptFolder }}
+  {{- range $path, $bytes := $.Files.Glob (printf "files/%s/*" $files) }}
+  {{ base $path }}: |-
+{{ $bytes | indent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

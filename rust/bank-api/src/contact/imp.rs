@@ -1,4 +1,5 @@
 use sqlx::{query_as, Pool, Postgres, QueryBuilder};
+use uuid::Uuid;
 
 use crate::{contact::contact::{CAction, Contact, ContactFilter, ContactResponse}, error::BankError, Queriable};
 
@@ -49,7 +50,7 @@ impl Queriable<ContactFilter> for ContactResponse{
 
 impl ContactResponse{
     //SQL POST LOGIC
-    pub(super) async fn add(contact_id: &str, user_id: &str, pool: &Pool<Postgres>) -> Result<Self, BankError>{
+    pub(super) async fn add(contact_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>) -> Result<Self, BankError>{
         const QUERY: &str = r#"
                 INSERT INTO contacts (user_id, contact_id, is_fav)
                 VALUES ($1, $2, FALSE) 

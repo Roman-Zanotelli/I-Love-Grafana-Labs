@@ -103,7 +103,7 @@ impl Req for SignInRequest{
 }
 
 impl SignInRequest{
-    async fn validate_db(&self, pool: &Pool<Postgres>) -> Result<String, AuthError>{
+    async fn validate_db(&self, pool: &Pool<Postgres>) -> Result<Uuid, AuthError>{
         //Prepare Statement
         let row = sqlx::query("SELECT * FROM auth WHERE email = $1")
             //Bind email

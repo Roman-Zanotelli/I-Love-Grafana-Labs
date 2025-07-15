@@ -13,7 +13,7 @@ anyhow = "1"
 sqlx = { version = "0.8", default-features = false, features = ["postgres","runtime-tokio-rustls","macros","chrono", "uuid", "json"] }
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 
 
 jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/jwt-util", branch = "main", features = ["decode"] }

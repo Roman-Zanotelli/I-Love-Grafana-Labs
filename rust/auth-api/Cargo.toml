@@ -14,5 +14,4 @@ thiserror = "2"
 argon2 = "0.5"
 uuid = { version = "1", features = ["v4"] }
 
-
-jwt-util = {path = "../jwt-util", features = ["encode"]}
+jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/jwt-util", branch = "main", features = ["encode"] }

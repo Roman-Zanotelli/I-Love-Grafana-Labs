@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 
 #[derive(Debug, Serialize)]
@@ -11,9 +12,9 @@ pub struct ContactResponse{
 #[derive(sqlx::FromRow)]
 #[serde(rename_all = "lowercase")]
 pub struct Contact{
-    user_id: String,  //Contact Owner
+    user_id: Uuid,  //Contact Owner
     contact_name: String, //Display Name
-    contact_id: String, //Acount ID of Contact
+    contact_id: Uuid, //Acount ID of Contact
     is_fav: Option<bool> //True if favorite, False if just saved, None if not saved
 }
 
@@ -22,7 +23,7 @@ pub struct Contact{
 #[serde(rename_all = "lowercase")]
 pub struct ContactFilter{
     pub contact_name: Option<String>, //filter by name of contact
-    pub contact_id: Option<String>, //filter by id of contact
+    pub contact_id: Option<Uuid>, //filter by id of contact
     pub is_fav: Option<bool>, //filter by favorite
     pub contact_action: Option<CAction> //Action to perform
 }

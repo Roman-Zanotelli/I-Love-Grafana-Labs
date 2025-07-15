@@ -1,0 +1,12 @@
+name: auth-api
+containerPort: 80
+replicaCount: 1
+image:
+  repository: romanzanotelli/auth-api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+env:
+  db_url: "postgres://user:password@auth-db:5432/auth"
+  jwt_duration: "3600"
+  jwt_secret: "something-super-duper-extra-secret!!!"
+  jwt_iss: "auth-api"

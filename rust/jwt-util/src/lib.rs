@@ -1,12 +1,14 @@
 //=========================================
 //Core Logic used bwtween encode/decode
 //=========================================
-#[cfg(feature = "core")]
+//#[cfg(feature = "core")]
 pub mod core{
+    use uuid::Uuid;
+
     //Claim data
     #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
     pub struct JwtClaims {
-        pub id: String,
+        pub id: Uuid,
         pub exp: usize,
         pub iss: String,
     }
@@ -20,7 +22,7 @@ pub mod core{
 
     //Observability Tracking Trait (Arc is used in both implementations so that a background task can hold reference to the result without copying it)
     pub(crate) trait Track {
-        fn track(self, input: &str) -> Self;
+        fn track(self, input: &Uuid) -> Self;
     }
 }
 
@@ -28,11 +30,12 @@ pub mod core{
 //=========================================
 //Decoding Logic
 //=========================================
-#[cfg(feature = "decode")]
+//#[cfg(feature = "decode")]
 pub mod decode{
     use std::sync::{Arc, OnceLock};
 
     use jsonwebtoken::errors::Error as JwtError;
+    use uuid::Uuid;
 
     use crate::core::{JwtClaims, Track};
 
@@ -41,10 +44,10 @@ pub mod decode{
     static JWT_VALIDATION: OnceLock<jsonwebtoken::Validation> = OnceLock::new();
 
     //Internal logic for decoding a signed JWT claim
-    fn _inner_decode(signed_claim: &str) -> Result<JwtClaims, JwtError>{
+    fn _inner_decode(signed_claim: &Uuid) -> Result<JwtClaims, JwtError>{
         
             jsonwebtoken::decode::<JwtClaims>(
-                signed_claim, 
+                &signed_claim.to_string(), 
                 JWT_DECODE_KEY.get_or_init(|| _decode_key()), 
                 JWT_VALIDATION.get_or_init(|| _validation())
             )
@@ -52,7 +55,7 @@ pub mod decode{
         .track(signed_claim)
     }
 
-    pub fn decode_claims(signed_claim: &str) -> Result<JwtClaims, JwtError> {
+    pub fn decode_claims(signed_claim: &Uuid) -> Result<JwtClaims, JwtError> {
         _inner_decode(signed_claim)
     }
 
@@ -69,7 +72,7 @@ pub mod decode{
 
     //tracking implementation for decoding
     impl Track for Result<JwtClaims, JwtError>{
-        fn track(self, input: &str) -> Self{
+        fn track(self, input: &Uuid) -> Self{
             //TODO: Tracking
             return self
         }
@@ -80,12 +83,13 @@ pub mod decode{
 //=========================================
 //Encoding Logic
 //=========================================
-#[cfg(feature = "encode")]
+//#[cfg(feature = "encode")]
 pub mod encode{
     use std::sync::{Arc, OnceLock};
 
     use chrono::Utc;
     use jsonwebtoken::errors::Error as JwtError;
+    use uuid::Uuid;
 
     use crate::core::{JwtClaims, Track};
 
@@ -96,7 +100,7 @@ pub mod encode{
     static JWT_ISS: OnceLock<String> = OnceLock::new();
 
     //Encode a claim by user id (later add a more flexible method for general claims)
-    pub fn encode_claims(id: String) -> Result<String, JwtError> {
+    pub fn encode_claims(id: Uuid) -> Result<String, JwtError> {
         let claim = JwtClaims{
                     id,
                     exp: Utc::now().timestamp() as usize + JWT_DURATION.get_or_init(|| _duration()),
@@ -107,7 +111,7 @@ pub mod encode{
             JWT_HEADER.get_or_init(|| _header()), 
             &claim,
             JWT_ENCODE_KEY.get_or_init(|| _encode_key())
-        ).track(&claim.id)
+        ).track(&id)
     }
 
 
@@ -118,7 +122,7 @@ pub mod encode{
 
     //init duration
     fn _duration() -> usize{
-    std::env::var("JWT_DURATION").unwrap_or("0".to_string()).parse().unwrap()
+    std::env::var("JWT_DURATION").unwrap_or("999999".to_string()).parse().unwrap()
     }
 
     //init iss
@@ -133,7 +137,7 @@ pub mod encode{
 
     //tracking implementation for encoding
     impl Track for Result<String, JwtError>{
-        fn track(self, input: &str) -> Self{
+        fn track(self, input: &Uuid) -> Self{
             //TODO: Tracking
             return self
         }
