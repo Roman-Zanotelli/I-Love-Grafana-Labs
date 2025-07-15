@@ -2,7 +2,7 @@ FROM rustlang/rust:nightly-slim AS build-env
 WORKDIR /app
 
 # Optimize rebuilds: copy manifests and pre-build to cache dependencies
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
 RUN mkdir src && echo 'fn main(){}' > src/main.rs && \
     cargo build --release && \
     rm -rf src target/release/deps/*
