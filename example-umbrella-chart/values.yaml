@@ -90,23 +90,15 @@ core: #Core microservices
         cpu: 500m
         memory: 256Mi
 
-observability: #Observability mircoservices
-
-  grafana: #Grafana Dashboard Configuration
-    replicaCount: 1
-    image:
-      repository: grafana/grafana
-      tag: 9.5.2
-      pullPolicy: IfNotPresent
-      pullSecrets:
+envoy: #Envoy Configuration
+  image:
+    repository: envoyproxy/envoy
+    tag: v1.26-latest
+    pullSecrets:
         - docker-hub-secret
-    service:
-      type: ClusterIP
-      port: 80
-    rootUrl: "https://localhost"
-    serveFromSubPath: true
+  replicaCount: 1
 
-  prometheus: #Pormetheus Configuration
+prometheus: #Pormetheus Configuration
     image:
       repository: prom/prometheus
       tag: latest
@@ -115,26 +107,58 @@ observability: #Observability mircoservices
         - docker-hub-secret
     replicaCount: 1
 
-  loki: #Loki Configuration
-    image:
-      repository: grafana/loki
-      tag: latest
-      pullPolicy: IfNotPresent
-      pullSecrets:
-        - docker-hub-secret
-    service:
-      type: ClusterIP
-      port: 3100
-    persistence:
-      enabled: false
-    auth_enabled: false
-    retention_period: 168h
-    replicaCount: 1
-
-envoy: #Envoy Configuration
+loki: #Loki Configuration
   image:
-    repository: envoyproxy/envoy
-    tag: v1.26-latest
+    repository: grafana/loki
+    tag: latest
+    pullPolicy: IfNotPresent
     pullSecrets:
-        - docker-hub-secret
+      - docker-hub-secret
+  service:
+    type: ClusterIP
+    port: 3100
+  persistence:
+    enabled: false
+  auth_enabled: false
+  retention_period: 168h
   replicaCount: 1
+
+promtail:
+  config:
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+    scrape_configs:
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_namespace, __meta_kubernetes_pod_name, __meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
+            separator: _
+            replacement: /var/log/pods/${1}_${2}_${3}/${4}/0.log
+            target_label: __path__
+grafana:
+  enabled: true
+  adminPassword: "admin"
+  grafana.ini:
+    server:
+      domain: localhost
+      root_url: "https://%(domain)s/grafana/"
+      serve_from_sub_path: true
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: false
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Loki
+          type: loki
+          url: http://loki:3100
+          access: proxy
+          isDefault: true
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus:9090
+          access: proxy
