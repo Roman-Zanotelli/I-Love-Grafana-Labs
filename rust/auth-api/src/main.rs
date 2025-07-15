@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::{get, post}, Json};
+use metrics_exporter_prometheus::PrometheusBuilder;
 use serde::Deserialize;
 
 use anyhow::Result as AnyResult;
@@ -11,17 +12,24 @@ use jwt_util::encode::encode_claims;
 use sqlx::{postgres::PgPoolOptions, Error as SqlxError, PgPool, Pool, Postgres, Row};
 
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 
 #[tokio::main]
 async fn main() -> AnyResult<()>{
-    //TODO: observability
+
+    let recorder_handle = PrometheusBuilder::new()
+        .install_recorder()?;
+     let metrics_handle = recorder_handle.clone();
+
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/sign_in", post(sign_in)) //Create sign in route
             .route("/sign_up", post(sign_up)) //Create sign up route
+            .route("/metrics", get(|| async move {Ok::<_, std::convert::Infallible>(metrics_handle.render())})) //Metrics Route for prometheus
             .with_state(init_pool(&std::env::var("DATABASE_URL")?).await?) //add connection pool
+            .layer(TraceLayer::new_for_http()) //Tower trace layer for auto instrumentation
     ).await?)
 }
 

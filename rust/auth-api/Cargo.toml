@@ -15,3 +15,7 @@ argon2 = "0.5"
 uuid = { version = "1", features = ["v4"] }
 
 jwt-util = { git = "https://github.com/Roman-Zanotelli/I-Love-Grafana-Labs.git", subdir = "rust/jwt-util", branch = "main", features = ["encode"] }
+
+metrics = "0.24"
+metrics-exporter-prometheus = "0.17"
+tower-http = { version = "0.6", features = ["trace"] }
