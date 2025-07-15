@@ -15,14 +15,14 @@ use opentelemetry::trace::TracerProvider;
 pub struct TrackingGuard {
     pub _pyro: Option<pyroscope::PyroscopeAgent<PyroscopeAgentReady>>,
     pub _otel: Option<opentelemetry_sdk::trace::Tracer>,
-    pub _prom: Option<PrometheusHandle>
+    pub prometheus_handle: PrometheusHandle
 }
 
 impl TrackingGuard {
     pub fn init_from_env() -> anyhow::Result<Self> {
         
          // Prometheus recorder
-        let prometheis_handle = PrometheusBuilder::new().install_recorder()?;
+        let prometheus_handle = PrometheusBuilder::new().install_recorder()?;
 
         // App/service name
         let app_name = env::var("APP_NAME").unwrap_or_else(|_| "default-app-name".into());
@@ -63,7 +63,7 @@ impl TrackingGuard {
         Ok(Self {
             _pyro: pyro_agent,
             _otel: Some(otel_tracer),
-            _prom: Some(prometheis_handle),
+            prometheus_handle,
         })
     }
 }

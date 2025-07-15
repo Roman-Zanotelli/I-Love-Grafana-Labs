@@ -19,10 +19,7 @@ use uuid::Uuid;
 #[tokio::main]
 async fn main() -> AnyResult<()>{
 
-    let recorder_handle = PrometheusBuilder::new()
-        .install_recorder()?;
-     let metrics_handle = recorder_handle.clone();
-
+    let tracking_guard = tracking_util::TrackingGuard::init_from_env()?;
     Ok(axum::serve( tokio::net::TcpListener::bind("0.0.0.0:80").await.unwrap(), //Set Up Listener
         axum::Router::new()
             .route("/sign_in", post(sign_in)) //Create sign in route
