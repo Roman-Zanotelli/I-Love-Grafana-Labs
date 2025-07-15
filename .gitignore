@@ -32,6 +32,8 @@ $RECYCLE.BIN/
 ############################
 # Build outputs
 **/target
+./Cargo.lock
+
 
 ############################
 # Helm

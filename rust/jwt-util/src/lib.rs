@@ -1,7 +1,7 @@
 //=========================================
 //Core Logic used bwtween encode/decode
 //=========================================
-//#[cfg(feature = "core")]
+#[cfg(feature = "core")]
 pub mod core{
     use uuid::Uuid;
 
@@ -30,7 +30,7 @@ pub mod core{
 //=========================================
 //Decoding Logic
 //=========================================
-//#[cfg(feature = "decode")]
+#[cfg(feature = "decode")]
 pub mod decode{
     use std::sync::{Arc, OnceLock};
 
@@ -83,7 +83,7 @@ pub mod decode{
 //=========================================
 //Encoding Logic
 //=========================================
-//#[cfg(feature = "encode")]
+#[cfg(feature = "encode")]
 pub mod encode{
     use std::sync::{Arc, OnceLock};
 
