@@ -111,7 +111,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: "demo-grafana.default.svc.cluster.local"
+                address: "grafana.default.svc.cluster.local"
                 port_value: 80
 admin:
   access_log_path: "/dev/null"

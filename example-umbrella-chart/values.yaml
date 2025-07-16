@@ -1,95 +1,3 @@
-core: #Core microservices
-
-  auth-api: #Auth-API configuration
-    name: auth-api
-    containerPort: 80
-    replicaCount: 1
-    image:
-      repository: romanzanotelli/auth-api
-      tag: "latest"
-      pullPolicy: IfNotPresent
-      pullSecrets:
-        - docker-hub-secret
-    env:
-      database_url: "postgres://api_user:super-secure-password@auth-db:5432/auth_db"
-      jwt_duration: "3600"
-      jwt_secret: "something-super-duper-extra-secret!!!"
-      jwt_iss: "auth-api"
-    postgres:
-      host: auth-db
-      port: 5432
-      waitTimeoutSeconds: 30
-      waitSleepSeconds: 5
-
-
-  bank-api:  #Bank-API configuration
-    name: bank-api
-    containerPort: 80
-    replicaCount: 1
-    image:
-      repository: romanzanotelli/bank-api
-      tag: "latest"
-      pullPolicy: IfNotPresent
-      pullSecrets:
-        - docker-hub-secret
-    env:
-      database_url: "postgres://api_user:super-secure-password@bank-db:5432/bank_db"
-      jwt_secret: "something-super-duper-extra-secret!!!"
-    postgres:
-      host: bank-db
-      port: 5432
-      waitTimeoutSeconds: 30
-      waitSleepSeconds: 5
-
-
-  bank-spa:  #Auth-SPA configuration
-    name: bank-spa
-    image:
-      repository: romanzanotelli/bank-spa
-      tag: latest
-      pullPolicy: IfNotPresent
-      pullSecrets:
-        - docker-hub-secret
-    replicaCount: 1
-    containerPort: 80
-    env:
-      csp: |
-        default-src 'self';
-        connect-src 'self' https://localhost;
-        script-src 'self';
-        script-src-attr 'self' 'unsafe-inline';
-        style-src 'self' 'unsafe-inline';
-        style-src-elem 'self' 'unsafe-inline';
-        font-src 'self';
-        img-src 'self' data:;
-
-
-  postgre:  #Postgre configurations
-    image:
-      repository: postgres
-      tag: "16.3"
-      pullPolicy: IfNotPresent
-      pullSecrets:
-        - docker-hub-secret
-    instances:
-      - name: auth-db
-        port: 5432
-        storage: 1Gi
-        password: "super-secure-root-password"
-        initScriptFolder: "init-scripts-auth"
-      - name: bank-db
-        port: 5432
-        storage: 1Gi
-        password: "super-secure-root-password"
-        initScriptFolder: "init-scripts-bank"
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 256Mi
-
 envoy: #Envoy Configuration
   image:
     repository: envoyproxy/envoy
@@ -123,6 +31,33 @@ loki: #Loki Configuration
   retention_period: 168h
   replicaCount: 1
 
+
+tempo:
+  fullnameOverride: tempo
+  mode: monolithic
+  traces:
+    storage:
+      backend: local
+      local:
+        path: /tmp/tempo
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+
+pyroscope:
+  fullnameOverride: "pyroscope"
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+
 promtail:
   config:
     clients:
@@ -136,7 +71,10 @@ promtail:
             separator: _
             replacement: /var/log/pods/${1}_${2}_${3}/${4}/0.log
             target_label: __path__
+
+
 grafana:
+  fullnameOverride: grafana
   enabled: true
   adminPassword: "admin"
   grafana.ini:
@@ -153,12 +91,110 @@ grafana:
     datasources.yaml:
       apiVersion: 1
       datasources:
-        - name: Loki
-          type: loki
-          url: http://loki:3100
-          access: proxy
-          isDefault: true
         - name: Prometheus
           type: prometheus
           url: http://prometheus:9090
           access: proxy
+          isDefault: true
+          uid: prometheus_source
+        - name: Loki
+          type: loki
+          url: http://loki:3100
+          access: proxy
+          uid: loki_source
+        - name: Tempo
+          type: tempo
+          url: http://tempo:3200
+          access: proxy
+          uid: tempo_source
+        - name: Pyroscope
+          type: grafana-pyroscope-datasource
+          url: http://pyroscope:4040
+          access: proxy
+          uid: pyroscope_source
+
+
+core: #Core microservices
+  auth-api: #Auth-API configuration
+    name: auth-api
+    containerPort: 80
+    replicaCount: 1
+    image:
+      repository: romanzanotelli/auth-api
+      tag: "latest"
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    env:
+      database_url: "postgres://api_user:super-secure-password@auth-db:5432/auth_db"
+      jwt_duration: "3600"
+      jwt_secret: "something-super-duper-extra-secret!!!"
+      jwt_iss: "auth-api"
+    postgres:
+      host: auth-db
+      port: 5432
+      waitTimeoutSeconds: 30
+      waitSleepSeconds: 5
+  bank-api:  #Bank-API configuration
+    name: bank-api
+    containerPort: 80
+    replicaCount: 1
+    image:
+      repository: romanzanotelli/bank-api
+      tag: "latest"
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    env:
+      database_url: "postgres://api_user:super-secure-password@bank-db:5432/bank_db"
+      jwt_secret: "something-super-duper-extra-secret!!!"
+    postgres:
+      host: bank-db
+      port: 5432
+      waitTimeoutSeconds: 30
+      waitSleepSeconds: 5
+  bank-spa:  #Auth-SPA configuration
+    name: bank-spa
+    image:
+      repository: romanzanotelli/bank-spa
+      tag: latest
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    replicaCount: 1
+    containerPort: 80
+    env:
+      csp: |
+        default-src 'self';
+        connect-src 'self' https://localhost;
+        script-src 'self';
+        script-src-attr 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        style-src-elem 'self' 'unsafe-inline';
+        font-src 'self';
+        img-src 'self' data:;
+  postgre:  #Postgre configurations
+    image:
+      repository: postgres
+      tag: "16.3"
+      pullPolicy: IfNotPresent
+      pullSecrets:
+        - docker-hub-secret
+    instances:
+      - name: auth-db
+        port: 5432
+        storage: 1Gi
+        password: "super-secure-root-password"
+        initScriptFolder: "init-scripts-auth"
+      - name: bank-db
+        port: 5432
+        storage: 1Gi
+        password: "super-secure-root-password"
+        initScriptFolder: "init-scripts-bank"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi

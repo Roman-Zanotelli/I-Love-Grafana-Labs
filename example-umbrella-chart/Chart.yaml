@@ -25,8 +25,14 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: promtail
-    version: "6.17.0"
+    version: "6.17.x"
     repository: "https://grafana.github.io/helm-charts"
   - name: grafana
-    version: "9.2.10"
+    version: "9.2.x"
     repository: "https://grafana.github.io/helm-charts"
+  - name: tempo
+    version: 1.23.x
+    repository: https://grafana.github.io/helm-charts
+  - name: pyroscope
+    version: 1.14.x
+    repository: https://grafana.github.io/helm-charts
