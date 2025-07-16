@@ -1,7 +1,11 @@
 FROM rustlang/rust:nightly-slim AS build-env
 WORKDIR /app
 
-# Optimize rebuilds: copy manifests and pre-build to cache dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+    
 COPY Cargo.toml ./
 RUN mkdir src && echo 'fn main(){}' > src/main.rs && \
     cargo build --release && \

@@ -112,10 +112,9 @@ grafana:
           url: http://pyroscope:4040
           access: proxy
           uid: pyroscope_source
-  dashboards:
-    default:
-      pyroscope-dashboard:
-        file: dashboards/example-minikube-dashboard.json
+  dashboardsProvider:
+    enabled: true
+    foldersFromFilesStructure: true
 
 
 core: #Core microservices
