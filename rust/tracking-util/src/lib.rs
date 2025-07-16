@@ -41,7 +41,7 @@ impl TrackingGuard {
 
         // Tempo (OTLP) tracing
         let tempo_endpoint =
-            env::var("TEMPO_ENDPOINT").unwrap_or_else(|_| "http://tempo:4317".into());
+            env::var("TEMPO_ENDPOINT").unwrap_or_else(|_| "http://tempo:3200".into());
 
         let exporter = SpanExporterBuilder::default().with_tonic().with_endpoint(tempo_endpoint).build()?;
         let provider = trace::TracerProviderBuilder::default()

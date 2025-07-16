@@ -9,7 +9,6 @@ use anyhow::Result as AnyResult;
 use axum::{extract::{Query, State}, http::StatusCode, response::IntoResponse, routing::{get, post}, Json};
 use axum_extra::{headers::{authorization::Bearer, Authorization}, TypedHeader};
 use jwt_util::decode::decode_claims;
-use metrics_exporter_prometheus::PrometheusBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool, Pool, Postgres, QueryBuilder};
 use tower_http::trace::TraceLayer;
